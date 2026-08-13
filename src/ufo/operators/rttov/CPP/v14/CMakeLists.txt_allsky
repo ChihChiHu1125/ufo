@@ -1,0 +1,36 @@
+# (C) Copyright 2017-2021 UCAR.
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+# Original clear-sky-only implementation (kept on disk, unused while the _allsky set below
+# is active). To roll back, comment out the _allsky set() and uncomment this one instead.
+# set ( rttovcpp_files
+#     ObsRadianceRTTOVCPP.h
+#     v14/ObsRadianceRTTOVCPP.cc
+#     ObsRadianceRTTOVCPPParameters.h
+#     ObsRadianceRTTOVCPPTLAD.h
+#     v14/ObsRadianceRTTOVCPPTLAD.cc
+#     v14/rttovcpp_interface.h
+#     v14/rttovcpp_interface.cc
+# )
+
+# All-sky (cloud/precipitation) implementation -- adds Absorbers/Clouds/HydrotablePath and
+# "linear obs operator" yaml options on top of the original RTTOVCPP operator.
+set ( rttovcpp_files
+    ObsRadianceRTTOVCPP_allsky.h
+    v14/ObsRadianceRTTOVCPP_allsky.cc
+    ObsRadianceRTTOVCPPParameters_allsky.h
+    ObsRadianceRTTOVCPPTLAD_allsky.h
+    v14/ObsRadianceRTTOVCPPTLAD_allsky.cc
+    v14/rttovcpp_interface_allsky.h
+    v14/rttovcpp_interface_allsky.cc
+)
+
+PREPEND( _p_rttovcpp_files       "operators/rttov/CPP"       ${rttovcpp_files} )
+
+set ( rttovcpp_src_files
+      ${_p_rttovcpp_files}
+      PARENT_SCOPE
+)
+

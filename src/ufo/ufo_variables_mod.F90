@@ -64,6 +64,15 @@ character(len=MAXVARLEN), public, parameter :: var_clh_wp    = "mass_content_of_
 character(len=MAXVARLEN), public, parameter :: var_clw    = "cloud_liquid_water_mixing_ratio_wrt_moist_air_and_condensed_water"
 character(len=MAXVARLEN), public, parameter :: var_cli    = "cloud_ice_mixing_ratio_wrt_moist_air_and_condensed_water"
 
+! Microphysics species mixing ratios wrt moist air only (kg/kg; denominator = dry air + water
+! vapor, excludes all condensate), "ratio between the mass of ice/liquid water and the mass of moist air"). 
+! Distinct from var_clw/var_cli above.
+character(len=MAXVARLEN), public, parameter :: var_qc_wet = "cloud_liquid_water_mixing_ratio_wrt_moist_air"
+character(len=MAXVARLEN), public, parameter :: var_qi_wet = "cloud_ice_mixing_ratio_wrt_moist_air"
+character(len=MAXVARLEN), public, parameter :: var_qr_wet = "rain_water_mixing_ratio_wrt_moist_air"
+character(len=MAXVARLEN), public, parameter :: var_qs_wet = "snow_water_mixing_ratio_wrt_moist_air"
+character(len=MAXVARLEN), public, parameter :: var_qg_wet = "graupel_mixing_ratio_wrt_moist_air"
+
 character(len=MAXVARLEN), public, parameter :: var_clwefr = "effective_radius_of_cloud_liquid_water_particle"
 character(len=MAXVARLEN), public, parameter :: var_cliefr = "effective_radius_of_cloud_ice_particle"
 character(len=MAXVARLEN), public, parameter :: var_clrefr = "effective_radius_of_rain_particle"

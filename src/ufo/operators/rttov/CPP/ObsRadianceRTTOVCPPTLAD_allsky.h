@@ -1,0 +1,91 @@
+/*
+ * (C) Copyright 2017-2021 UCAR
+ *
+ * This software is licensed under the terms of the Apache Licence Version 2.0
+ * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+ */
+
+#ifndef UFO_OPERATORS_RTTOV_CPP_OBSRADIANCERTTOVCPPTLAD_ALLSKY_H_
+#define UFO_OPERATORS_RTTOV_CPP_OBSRADIANCERTTOVCPPTLAD_ALLSKY_H_
+
+#include <ostream>
+#include <string>
+#include <vector>
+
+#include "ioda/ObsDataVector.h"
+#include "oops/base/Variables.h"
+#include "oops/util/Logger.h"
+#include "oops/util/ObjectCounter.h"
+#include "ufo/LinearObsOperatorBase.h"
+#include "ufo/operators/rttov/CPP/ObsRadianceRTTOVCPPParameters_allsky.h"
+
+#include "rttov/wrapper/RttovSafe.h"
+
+namespace ioda {
+  class ObsSpace;
+  class ObsVector;
+}
+
+namespace ufo {
+  class GeoVaLs;
+  class ObsDiagnostics;
+
+// -----------------------------------------------------------------------------
+/// RadianceRTTOV TL/AD observation operator class
+class ObsRadianceRTTOVCPPTLAD : public LinearObsOperatorBase,
+                   private util::ObjectCounter<ObsRadianceRTTOVCPPTLAD> {
+ public:
+  /// The type of parameters accepted by the constructor of this operator.
+  /// This typedef is used by the ObsOperatorFactory.
+  typedef ObsRadianceRTTOVCPPParameters Parameters_;
+  typedef ioda::ObsDataVector<int> QCFlags_t;
+
+  static const std::string classname() {return "ufo::ObsRadianceRTTOVCPPTLAD";}
+
+  ObsRadianceRTTOVCPPTLAD(const ioda::ObsSpace &, const Parameters_ &);
+  virtual ~ObsRadianceRTTOVCPPTLAD();
+
+  // Calculate Jacobian H(x_g) of obs operator
+  void setTrajectory(const GeoVaLs &, ObsDiagnostics &, const QCFlags_t &) override;
+  // Calculate dy = H dx
+  void simulateObsTL(const GeoVaLs &, ioda::ObsVector &) const override;
+  // Calculate H^T dy
+  void simulateObsAD(GeoVaLs &, const ioda::ObsVector &) const override;
+
+
+// Other: declare variable function with return type of oops:Variables
+  const oops::Variables & requiredVars() const override {return varin_;}
+
+ private:
+  void print(std::ostream &) const override;
+  oops::Variables varin_;
+  std::string        CoefFileName;
+  std::vector<int>   channels_;
+  mutable std::size_t        nlevels;  // need this in order to allocate dx
+  std::vector<bool>  skip_profile;
+
+// All-sky / trace gas configuration used to build the trajectory (same as the nonlinear
+// operator's Absorbers/MWClouds/IRClouds/HydrotablePath -- see ObsRadianceRTTOVCPPParameters)
+  bool                     trajDoO3_ = false;
+  std::vector<std::string> trajMwCloudSpecies_;
+  std::vector<std::string> trajIRCloudSpecies_;
+  std::string              trajLiquidCloudType_;
+  bool                     trajUseModelEffectiveRadius_ = false;
+  std::string              trajThermalSolver_ = "delta_edd";
+  std::string              trajOverlapParam_ = "auto_select";
+  std::string              hydrotablePath_;
+
+// Subset of Absorbers/MWClouds/IRClouds that are active (perturbed) in the TL/AD; from the
+// yaml's "linear obs operator" block, e.g. {"H2O"} or {"H2O","O3"} / {"Water","Rain",...}
+  std::vector<std::string> linearAbsorbers_;
+  std::vector<std::string> linearMWClouds_;
+  std::vector<std::string> linearIRClouds_;
+
+// Declare a RttovSafe object for one single sensor
+  mutable rttov::RttovSafe  aRttov_ = rttov::RttovSafe();
+};
+
+// -----------------------------------------------------------------------------
+
+}  // namespace ufo
+#endif  // UFO_OPERATORS_RTTOV_CPP_OBSRADIANCERTTOVCPPTLAD_ALLSKY_H_
