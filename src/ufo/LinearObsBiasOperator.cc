@@ -24,7 +24,7 @@ namespace ufo {
 // -----------------------------------------------------------------------------
 
 LinearObsBiasOperator::LinearObsBiasOperator(ioda::ObsSpace & odb)
-  : odb_(odb) {
+  : odb_(odb), qcBias_(odb, odb.assimvariables()) {
   oops::Log::trace() << "LinearObsBiasOperator::create done." << std::endl;
 }
 
@@ -63,6 +63,9 @@ void LinearObsBiasOperator::setTrajectory(const GeoVaLs & geovals, const ObsBias
     }
   }
 
+  // QC bias flag  
+  qcBias_ = bias.qcBias();
+
   oops::Log::trace() << "LinearObsBiasOperator::setTrajectory done." << std::endl;
 }
 
@@ -92,13 +95,21 @@ void LinearObsBiasOperator::computeObsBiasAD(ObsBiasIncrement & biascoeffinc,
                                              const ioda::ObsVector & ybiasinc) const {
   oops::Log::trace() << "LinearObsBiasOperator::computeObsBiasAD starts." << std::endl;
 
-  const size_t npreds = predData_.size();
+  // the mask is used to determine the "dropout observations"
+  ioda::ObsVector masked(ybiasinc);
+  const std::size_t nvars = masked.nvars();
+  for (std::size_t jv = 0; jv < qcBias_.nvars(); ++jv) {
+    for (std::size_t jl = 0; jl < qcBias_.nlocs(); ++jl) {
+      if (qcBias_[jv][jl] != 0) masked[jl * nvars + jv] = 0.0;
+    }
+  }
 
+  const size_t npreds = predData_.size();
   for (std::size_t jpred = 0; jpred < npreds; ++jpred) {
     if (byRecord_) {
-      biascoeffinc.updateCoeff(jpred, predData_[jpred].multivarrec_dot_product_with(ybiasinc));
+      biascoeffinc.updateCoeff(jpred, predData_[jpred].multivarrec_dot_product_with(masked));
     } else {
-      biascoeffinc.updateCoeff(jpred, predData_[jpred].multivar_dot_product_with(ybiasinc));
+      biascoeffinc.updateCoeff(jpred, predData_[jpred].multivar_dot_product_with(masked));
     }
   }
 

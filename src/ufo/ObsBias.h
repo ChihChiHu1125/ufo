@@ -24,6 +24,9 @@
 #include "ufo/ObsBiasParameters.h"
 #include "ufo/predictors/PredictorBase.h"
 
+#include "ioda/ObsDataVector.h"
+#include "ufo/qcbiasfilters/QcBiasFilterBase.h"
+
 namespace eckit {
   class Configuration;
 }
@@ -73,6 +76,11 @@ class ObsBias : public util::Printable,
   const oops::ObsVariables & requiredHdiagnostics() const {return hdiags_;}
   const std::vector<std::string> & requiredPredictors() const {return prednames_;}
 
+  // QC bias flags
+  const ioda::ObsDataVector<int> & qcBias() const {return qcBias_;}
+  void computeQcBias(ioda::ObsSpace &, const GeoVaLs &,
+                     const ObsDiagnostics &, const ioda::ObsVector & hofx) const;
+
   /// Return a reference to the vector of all (static and variable) predictors.
   const Predictors & predictors() const {return predictors_;}
 
@@ -112,6 +120,7 @@ class ObsBias : public util::Printable,
   }
 
   void initPredictor(const PredictorParametersWrapper &params);
+  void initQcBiasFilter(const QcBiasFilterParametersWrapper &);
 
   /// bias correction coefficients (nrecords x nprimitivevariables x npredictors)
   Eigen::VectorXd biascoeffs_;
@@ -124,6 +133,11 @@ class ObsBias : public util::Printable,
   std::size_t numStaticPredictors_;
   /// number of variable predictors (i.e. predictors with variable coefficients)
   std::size_t numVariablePredictors_;
+
+  QcBiasFilters qcBiasFilters_;
+  mutable std::vector<ioda::ObsDataVector<int>> qcBiasPerFilter_;
+  mutable ioda::ObsDataVector<int> qcBias_;
+
 
   /// store data from the input file when using by record
   /// for outputting during the write procedure

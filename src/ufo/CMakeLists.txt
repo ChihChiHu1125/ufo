@@ -10,6 +10,7 @@ add_subdirectory( filters )
 add_subdirectory( fov )
 add_subdirectory( obslocalization )
 add_subdirectory( predictors )
+add_subdirectory( qcbiasfilters )
 add_subdirectory( profile )
 add_subdirectory( superob )
 add_subdirectory( utils )
@@ -129,6 +130,7 @@ list( APPEND ufo_src_files
 
     ${utils_src_files}
     ${predictor_src_files}
+    ${qcbiasfilter_src_files}
     ${obslocalization_src_files}
     ${identity_src_files}
     ${logarithm_src_files}

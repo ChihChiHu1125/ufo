@@ -11,6 +11,8 @@
 #include <vector>
 
 #include "oops/util/Printable.h"
+#include "ioda/ObsDataVector.h"
+
 
 namespace ioda {
   class ObsSpace;
@@ -47,6 +49,10 @@ class LinearObsBiasOperator : public util::Printable {
 
   /// predictors values; set in setTrajectory
   std::vector<ioda::ObsVector> predData_;
+
+  /// QC bias flags
+  ioda::ObsDataVector<int> qcBias_;
+
 };
 
 // -----------------------------------------------------------------------------

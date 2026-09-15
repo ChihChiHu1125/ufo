@@ -19,6 +19,7 @@
 #include "oops/util/parameters/RequiredPolymorphicParameter.h"
 
 #include "ufo/predictors/PredictorBase.h"
+#include "ufo/qcbiasfilters/QcBiasFilterBase.h"
 
 namespace ufo {
 
@@ -33,6 +34,16 @@ class PredictorParametersWrapper : public oops::Parameters {
   oops::RequiredPolymorphicParameter<PredictorParametersBase, PredictorFactory>
     predictorParameters{"name", this};
 };
+
+/// \brief Contains a polymorphic parameter holding an instance of a subclass of
+/// QcBiasFilterParametersBase.
+class QcBiasFilterParametersWrapper : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(QcBiasFilterParametersWrapper, Parameters)
+ public:
+  oops::RequiredPolymorphicParameter<QcBiasFilterParametersBase, QcBiasFilterFactory>
+    qcBiasFilterParameters{"name", this};
+};
+
 
 class StaticOrVariationalBCParameters : public oops::Parameters {
   OOPS_CONCRETE_PARAMETERS(StaticOrVariationalBCParameters, Parameters)
@@ -100,6 +111,9 @@ class ObsBiasParameters : public oops::Parameters {
   oops::Parameter<bool> BiasCorrectionByRecord{"bc by record", false, this};
   /// List of variables (and channels) that is not bias corrected
   oops::Parameter<oops::ObsVariables> variablesNoBC{"variables without bc", {}, this};
+  /// The QC filter for bias coefficients (for VarBC), the obs filtered out by qc bias filter will not contribute to 
+  /// the gradient of bias coefficients (but still to the model state)
+  oops::Parameter<std::vector<QcBiasFilterParametersWrapper>> qcBiasFilters{"qc bias filters", {}, this};
   /// Path to a NetCDF file containing initial values of the coefficients of predictors used
   /// in VarBC.
   oops::OptionalParameter<std::string> inputFile{"input file", this};

@@ -21,6 +21,7 @@
 #include "ioda/Layout.h"
 #include "ioda/ObsGroup.h"
 #include "ioda/ObsSpace.h"
+#include "ioda/ObsDataVector.h"
 
 #include "oops/base/ObsVariables.h"
 #include "oops/base/Variables.h"
@@ -37,8 +38,10 @@ namespace ufo {
 // -----------------------------------------------------------------------------
 
 ObsBias::ObsBias(ioda::ObsSpace & odb, const eckit::Configuration & config)
-  : numStaticPredictors_(0), numVariablePredictors_(0), byRecord_(),
-    vars_(odb.assimvariables()), rank_(odb.distribution()->rank()),
+  : numStaticPredictors_(0), numVariablePredictors_(0),
+    qcBias_(odb, odb.assimvariables()), byRecord_(),
+    vars_(odb.assimvariables()),
+    rank_(odb.distribution()->rank()),
     comm_(odb.comm()), commTime_(odb.commTime()) {
   oops::Log::trace() << "ObsBias::create starting." << std::endl;
 
@@ -64,6 +67,11 @@ ObsBias::ObsBias(ioda::ObsSpace & odb, const eckit::Configuration & config)
                               "but the observations are not grouped into records.");
   }
   ASSERT(nrecs_ > 0);
+
+  for (const QcBiasFilterParametersWrapper &wrapper : params.qcBiasFilters.value()) {
+    initQcBiasFilter(wrapper);
+  }
+
 
   oops::ObsVariables varsNoBC = params.variablesNoBC;
   varsNoBC.intersection(vars_);  // Safeguard to make sure that varsNoBC is a subset of vars_
@@ -121,10 +129,12 @@ ObsBias::ObsBias(const ObsBias & other, const bool copy)
     prednames_(other.prednames_),
     numStaticPredictors_(other.numStaticPredictors_),
     numVariablePredictors_(other.numVariablePredictors_),
+    qcBiasFilters_(other.qcBiasFilters_), qcBias_(other.qcBias_),
     byRecord_(other.byRecord_),
     nrecs_(other.nrecs_),
     vars_(other.vars_), varIndexNoBC_(other.varIndexNoBC_),
-    geovars_(other.geovars_), hdiags_(other.hdiags_), rank_(other.rank_),
+    geovars_(other.geovars_), hdiags_(other.hdiags_),
+    rank_(other.rank_),
     comm_(other.comm_), commTime_(other.commTime_) {
   oops::Log::trace() << "ObsBias::copy ctor starting." << std::endl;
 
@@ -162,6 +172,9 @@ ObsBias & ObsBias::operator=(const ObsBias & rhs) {
     geovars_    = rhs.geovars_;
     hdiags_     = rhs.hdiags_;
     rank_       = rhs.rank_;
+    qcBiasFilters_    = rhs.qcBiasFilters_;      
+    qcBiasPerFilter_  = rhs.qcBiasPerFilter_;    
+    qcBias_           = rhs.qcBias_;             
   }
   return *this;
 }
@@ -378,6 +391,33 @@ void ObsBias::write(const eckit::Configuration & config) const {
 
 // -----------------------------------------------------------------------------
 
+void ObsBias::computeQcBias(ioda::ObsSpace & odb, const GeoVaLs & geovals,
+                            const ObsDiagnostics & ydiags, const ioda::ObsVector & hofx) const {
+  if (qcBiasFilters_.empty()) return;
+
+  qcBiasPerFilter_.clear();
+  qcBias_ = ioda::ObsDataVector<int>(odb, vars_);
+  qcBias_.zero();
+
+  for (const auto & filter : qcBiasFilters_) {
+    ioda::ObsDataVector<int> flag(odb, vars_);
+    flag.zero();
+    filter->compute(odb, geovals, ydiags, hofx, flag);
+    flag.save("QcBias_" + filter->name());
+
+    for (std::size_t jv = 0; jv < vars_.size(); ++jv) {
+      for (std::size_t jl = 0; jl < odb.nlocs(); ++jl) {
+        if (flag[jv][jl] != 0) qcBias_[jv][jl] = flag[jv][jl];   // OR
+      }
+    }
+    qcBiasPerFilter_.push_back(flag);
+  }
+  qcBias_.save("QcBias");
+}
+
+
+// -----------------------------------------------------------------------------
+
 double ObsBias::norm() const {
   oops::Log::trace() << "ObsBias::norm starting." << std::endl;
   double zz = 0.0;
@@ -458,6 +498,15 @@ void ObsBias::initPredictor(const PredictorParametersWrapper &params) {
     for (const std::string & variable : vars_.variables())
       hdiags_ += oops::ObsVariables({prednames_.back() + "_" + variable});
   }
+}
+
+// -----------------------------------------------------------------------------
+
+void ObsBias::initQcBiasFilter(const QcBiasFilterParametersWrapper &wrapper) {
+  std::shared_ptr<QcBiasFilterBase> filter(
+      QcBiasFilterFactory::create(wrapper.qcBiasFilterParameters, vars_));
+  qcBiasFilters_.push_back(filter);
+  hdiags_ += filter->requiredHdiagnostics();
 }
 
 // -----------------------------------------------------------------------------
