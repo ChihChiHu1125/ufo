@@ -61,6 +61,14 @@ class ObsBiasCovariance : public util::Printable,
   const std::vector<std::string> predictorNames() const {return prednames_;}
   std::unique_ptr<ObsBiasPreconditioner> preconditioner() const;
 
+  /// Return the bias coefficient prior error variances (B_b diagonal), as read from the
+  /// "prior" input file and already inflated for this cycle. Flattened in the same order as
+  /// index(jrec, jvar, jpred): jrec * (nvars * npred) + jvar * npred + jpred.
+  /// Added to support ensemble online bias-correction R inflation (ObsErrorEnsembleOnlineBCInflation),
+  /// which needs read-only access to this prior variance without duplicating the
+  /// read-prior-file-and-inflate logic implemented in this class's constructor.
+  const Eigen::VectorXd & priorVariances() const {return variances_;}
+
  private:
   void print(std::ostream &) const {}
 
