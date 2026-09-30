@@ -36,7 +36,8 @@ class ObsErrorEnsembleOnlineBCInflationParameters : public ObsErrorParametersBas
   OOPS_CONCRETE_PARAMETERS(ObsErrorEnsembleOnlineBCInflationParameters, ObsErrorParametersBase)
  public:
   /// "diagonal": R_eff = R + diag(P * B_b * P^T)  (only the diagonal terms; no matrix inversion).
-  /// "full_matrix": Woodbury-based non-diagonal correction (not yet implemented).
+  /// "full_matrix": Woodbury-based non-diagonal correction, computed per channel. Requires the
+  /// LETKF/GETKF solver to use its C++ weight-computation path, not "fortran ETKF: true".
   oops::RequiredParameter<std::string> inflationMethod{"inflation method", this};
 
   /// The R covariance model this inflation is applied on top of (e.g. "diagonal").
@@ -63,7 +64,11 @@ class ObsErrorEnsembleOnlineBCInflationParameters : public ObsErrorParametersBas
 /// Two methods are supported, selected via "inflation method":
 ///  - "diagonal": only the diagonal of P B_b P^T is added to R (cheap, no inversion needed).
 ///  - "full_matrix": the full non-diagonal correction, computed per-channel via the Woodbury
-///    identity. Not yet implemented.
+///    identity (channels are independent because B_b has no cross-channel correlation).
+///    Only local_invVarR() remains unimplemented for this method, since R_eff_local^-1 is not
+///    diagonal in general; this means the LETKF/GETKF solver must use the C++ weight-computation
+///    path (localInverseMultiply()), not the GSI Fortran path ("fortran ETKF: true"), which only
+///    ever calls local_invVarR().
 ///
 /// \note On ordering: R_eff = R + P B_b P^T is formed at the GLOBAL (pre-localization) level,
 /// and the localization weight is then applied to R_eff exactly the way base_ would apply it
@@ -116,9 +121,19 @@ class ObsErrorEnsembleOnlineBCInflation : public ObsErrorBase {
   /// space (NOT just the local subset), where inflation_j = P_j^T B_{b,channel(j)} P_j.
   /// Deliberately done at the GLOBAL (pre-localization) level -- see the class-level comment
   /// on ordering -- so that localize() can apply the localization weight to R_eff exactly the
-  /// same way base_ would apply it to the un-inflated R. No-op after the first call, and a
-  /// no-op entirely when method_ != "diagonal".
+  /// same way base_ would apply it to the un-inflated R. No-op after the first call.
+  /// Used by localize()/localInverseMultiply()/local_invVarR() for method_ == "diagonal", and
+  /// by save() for both methods (as a diagonal-only diagnostic view of R_eff, even when
+  /// method_ == "full_matrix" -- see the note on save() below).
   void ensureGlobalInvVarEffComputed() const;
+
+  /// Caches globalInvVarRaw_ = base_->getInverseVariance(), the GLOBAL (pre-localization,
+  /// un-inflated) inverse variance of the wrapped R. Only used by method_ == "full_matrix": it
+  /// is the "R_c^-1" that feeds the per-channel Woodbury correction in localInverseMultiply().
+  /// Cached once (rather than re-fetched in every localize() call, i.e. every grid point) since
+  /// base_->getInverseVariance() allocates a full-obs-space ioda::ObsVector. No-op after the
+  /// first call, and a no-op entirely when method_ != "full_matrix".
+  void ensureGlobalInvVarRawComputed() const;
 
   std::unique_ptr<ObsErrorBase> base_;
   std::unique_ptr<ObsBiasCovariance> biasCov_;
@@ -132,20 +147,32 @@ class ObsErrorEnsembleOnlineBCInflation : public ObsErrorBase {
   mutable bool predictorsLoaded_ = false;
   mutable std::vector<std::unique_ptr<ioda::ObsVector>> predictorVectors_;
 
-  // Lazily-computed once (method_ == "diagonal" only); GLOBAL (pre-localization) effective
-  // inverse variance 1/(R_jj + inflation_j), indexed the same way as any ioda::ObsVector
-  // (size nlocs x nvars, channel-fastest).
+  // Lazily-computed once; GLOBAL (pre-localization) effective inverse variance
+  // 1/(R_jj + inflation_j), indexed the same way as any ioda::ObsVector (size nlocs x nvars,
+  // channel-fastest). Used for the actual R_eff by method_ == "diagonal", and as a
+  // diagonal-only diagnostic view of R_eff by save() for both methods.
   mutable bool globalInvVarEffComputed_ = false;
   mutable Eigen::VectorXd globalInvVarEff_;
 
+  // Lazily-computed once (method_ == "full_matrix" only); GLOBAL (pre-localization), UN-inflated
+  // inverse variance of the wrapped R, i.e. a cached copy of base_->getInverseVariance().
+  mutable bool globalInvVarRawComputed_ = false;
+  mutable Eigen::VectorXd globalInvVarRaw_;
+
   // Filled in by localize().
-  //  - localPredictors_/localChannelIdx_: local subset of P, kept for the future "full_matrix"
-  //    (Woodbury) method, which is not yet implemented.
-  //  - localInvVarEff_: the localization weight applied to globalInvVarEff_ (diagonal method);
-  //    consumed by localInverseMultiply()/local_invVarR().
+  //  - localPredictors_/localChannelIdx_: local subset of P (raw, un-weighted) and the channel
+  //    index of each local observation. Used by the "full_matrix" Woodbury correction, which is
+  //    computed independently per channel (B_b has no cross-channel correlation).
+  //  - localInvVarEff_: w_j * globalInvVarEff_[j] (diagonal method); consumed by
+  //    localInverseMultiply()/local_invVarR().
+  //  - localInvVarRaw_/localSqrtWeight_: raw (un-inflated, un-weighted) R_jj^-1 and sqrt(w_j) at
+  //    each local observation (full_matrix method); localInverseMultiply() cannot re-derive
+  //    these from locvector since it is not passed locvector, so they must be cached here.
   mutable Eigen::MatrixXf localPredictors_;    ///< (n_pred x n_local)
   mutable std::vector<int> localChannelIdx_;   ///< size n_local; channel index of each local obs
   mutable Eigen::VectorXd localInvVarEff_;     ///< size n_local; w_j * globalInvVarEff_[j]
+  mutable Eigen::VectorXd localInvVarRaw_;     ///< size n_local; raw R_jj^-1 (full_matrix)
+  mutable Eigen::VectorXd localSqrtWeight_;    ///< size n_local; sqrt(locvector[jj]) (full_matrix)
 };
 
 // -----------------------------------------------------------------------------
