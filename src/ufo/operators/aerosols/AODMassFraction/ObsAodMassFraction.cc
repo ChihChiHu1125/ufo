@@ -155,8 +155,8 @@ double ObsAodMassFraction::getUKCADustDiameter(const double num, const double ma
   const double c = (mode == "accumulation") ? c_a : c_c;
 
   // Return the diameter (m) if mass and number fractions are non-zero and positive.
-  // Else return zero.
-  return (num > 0 && mass > 0) ? std::pow(c*(mass / num), 1.0 / 3.0) : 0.0;
+  // Else return small diameter value. Try one micron (1e-6 m) as a small value.
+  return (num > 0 && mass > 0) ? std::pow(c*(mass / num), 1.0 / 3.0) : 1.0e-6;
 }
 
 // -----------------------------------------------------------------------------
@@ -169,10 +169,10 @@ void ObsAodMassFraction::simulateObs(const GeoVaLs & geovals, ioda::ObsVector & 
   ASSERT(geovals.nlocs() == hofx.nlocs());
   hofx.zero();
 
-  // Get number of obs locations, number of full (rho) model pressure levels,
-  // number of aerosol species/modes
+  // Get number of obs locations, aerosol mass-fraction levels, and aerosol
+  // species/modes
   const std::size_t nlocs = geovals.nlocs();
-  const std::size_t nlevels = geovals.nlevs(oops::Variable{"air_pressure_levels"});
+  const std::size_t nlevels = geovals.nlevs(oops::Variable{varaerosolmass_[0]});
   std::size_t nspecies = speciesList_.size();  // number of species/modes to include in AOD calc
 
   // Get 2-D surface pressure
@@ -186,10 +186,10 @@ void ObsAodMassFraction::simulateObs(const GeoVaLs & geovals, ioda::ObsVector & 
       };
 
   // Define variables needed for AOD calculation
-  std::vector<double> plev(nlevels);  // air pressure on rho levels (Pa)
-  std::vector<double> mass(nlevels - 1);  // mass fraction on half (theta) levels
-  std::vector<double> num(nlevels - 1);  // number fraction on half (theta) levels
-  const std::size_t lowest_level = nlevels - 2;  // index of lowest model layer (just above surface)
+  std::vector<double> plev(nlevels + 1);  // air pressure on full (rho) levels (Pa)
+  std::vector<double> mass(nlevels);  // mass fraction on half (theta) levels
+  std::vector<double> num(nlevels);  // number fraction on half (theta) levels
+  const std::size_t lowest_level = nlevels - 1;  // index of lowest model layer (just above surface)
 
   // loop over profiles and species and calculate AOD
   for (std::size_t jloc = 0; jloc < nlocs; jloc++) {
@@ -215,7 +215,7 @@ void ObsAodMassFraction::simulateObs(const GeoVaLs & geovals, ioda::ObsVector & 
       hofx[jloc] += mass[lowest_level] * alpha(ps[jloc] - plev[lowest_level], AODKExt);
 
       // calculate AOD for the rest of the model layers
-      for (std::size_t jlev = 0; jlev < (nlevels - 2); jlev++) {
+      for (std::size_t jlev = 0; jlev < (nlevels - 1); jlev++) {
         AODKExt = 0.0;
         if (params_.extinctionMethodName.value() == extinctionMethod::MetOfficeLUTFit) {
           auto diameter = getUKCADustDiameter(num[jlev], mass[jlev], speciesList_[jmode]);

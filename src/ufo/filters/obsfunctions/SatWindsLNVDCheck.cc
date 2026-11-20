@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -70,10 +71,10 @@ void SatWindsLNVDCheck::compute(const ObsFilterData & in,
   for (size_t jj = 0; jj < nlocs; ++jj) {
     if (u[jj] != missing && v[jj] != missing) {
       if ((u[jj]*u[jj] + v[jj]*v[jj]) > 1.01f) {
-        out[0][jj] = sqrt((u[jj]-um[jj])*(u[jj]-um[jj]) + (v[jj]-vm[jj])*(v[jj]-vm[jj]))
-                    / log(sqrt(u[jj]*u[jj] + v[jj]*v[jj]));
+        out[0][jj] = std::sqrt((u[jj]-um[jj])*(u[jj]-um[jj]) + (v[jj]-vm[jj])*(v[jj]-vm[jj]))
+                    / std::log(std::sqrt(u[jj]*u[jj] + v[jj]*v[jj]));
       } else {
-        out[0][jj] = sqrt((u[jj]-um[jj])*(u[jj]-um[jj]) + (v[jj]-vm[jj])*(v[jj]-vm[jj]));
+        out[0][jj] = std::sqrt((u[jj]-um[jj])*(u[jj]-um[jj]) + (v[jj]-vm[jj])*(v[jj]-vm[jj]));
       }
     } else {
       out[0][jj] = missing;

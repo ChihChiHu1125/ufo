@@ -13,7 +13,9 @@
 
 #include "eckit/config/Configuration.h"
 
+#include "ioda/distribution/Distribution.h"
 #include "ioda/Engines/HH.h"
+#include "ioda/ObsGroup.h"
 #include "ioda/ObsSpace.h"
 #include "oops/util/Logger.h"
 #include "ufo/ObsBias.h"
@@ -323,7 +325,7 @@ void ObsBiasIncrement::print(std::ostream & os) const {
     os << "ufo::ObsBiasIncrement::print " << std::endl;
     os << "---------------------------------------------------------------" << std::endl;
     for (std::size_t p = 0; p < prednames_.size(); ++p) {
-      os << std::fixed << std::setw(20) << prednames_[p]
+      os << std::setw(20) << prednames_[p]
          << ":  Min= " << std::setw(15) << coeffs.row(p).minCoeff()
          << ",  Max= " << std::setw(15) << coeffs.row(p).maxCoeff()
          << ",  Norm= " << std::setw(15) << coeffs.row(p).norm()

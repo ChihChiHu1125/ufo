@@ -72,13 +72,30 @@ ufo_add_test( NAME    filter_stage_mpi
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+ufo_add_test( NAME    find_nearest_neighbors
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/find_nearest_neighbors.yaml"
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    find_nearest_neighbors_mpi
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/find_nearest_neighbors.yaml"
+              MPI     3
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    gnssrobendmetoffice_qc
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gnssrobendmetoffice_qc.yaml"
               MPI     1
               LIBS    ufo
-              LABELS  filters ci_oneapi_disable
+              LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
 ufo_add_test( NAME    gnssrobendmetoffice_qc_profile
@@ -96,7 +113,7 @@ ufo_add_test( NAME    gnssrobendmetoffice_obserror
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gnssrobendmetoffice_obserror.yaml"
               MPI     1
               LIBS    ufo
-              LABELS  filters ci_oneapi_disable
+              LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
 ufo_add_test( NAME    gnssrorefmetoffice_qc
@@ -151,13 +168,22 @@ ufo_add_test( NAME    gnssro_super_refraction_check
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gnssro_super_refraction_check.yaml"
               MPI     1
               LIBS    ufo
-              LABELS  filters ci_oneapi_disable
+              LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
 ufo_add_test( NAME    metar_qc_filters
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/metar_qc_filters.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    function_SharedListCheck
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_SharedListCheck.yaml"
               MPI     1
               LIBS    ufo
               LABELS  filters
@@ -316,6 +342,15 @@ ufo_add_test( NAME    qc_boundscheck
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+ufo_add_test( NAME    qc_boundscheck_layers
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_boundscheck_layers.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    qc_creatediagnosticflags
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
@@ -444,10 +479,9 @@ ufo_add_test( NAME    qc_gauss_thinning_satrad
 #
 ufo_add_test( NAME    qc_gauss_thinning_unittests
               ECBUILD
-              SOURCES ../../../mains/TestGaussianThinning.cc
+              COMMAND ufo_qc_gauss_thinning_satrad
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_gauss_thinning_unittests.yaml"
               MPI     1
-              LIBS    ufo
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
@@ -570,6 +604,23 @@ if( ${gsw_FOUND} )
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 endif( ${gsw_FOUND} )
 #
+ufo_add_test( NAME    qc_percentile
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_percentile.yaml"
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    qc_percentile_mpi
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_percentile.yaml"
+              MPI     4
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    qc_poisson_disk_thinning
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
@@ -678,10 +729,36 @@ ufo_add_test( NAME    qc_profile_unflagobs_check
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+ufo_add_test( NAME    qc_record_threshold_rejection
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_record_threshold_rejection.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    qc_spike_and_step_check
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_spike_and_step_check.yaml"
+              MPI     4
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    qc_stepcheck
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_stepcheck.yaml"
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    qc_stepcheck_mpi
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/qc_stepcheck.yaml"
               MPI     4
               LIBS    ufo
               LABELS  filters
@@ -858,6 +935,23 @@ ufo_add_test( NAME    superob_radar_4PE
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+ufo_add_test( NAME    use_nearest_neighbors
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/use_nearest_neighbors.yaml"
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    use_nearest_neighbors_mpi
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/use_nearest_neighbors.yaml"
+              MPI     3
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    test_parameter_substitution
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
@@ -1023,7 +1117,7 @@ if( crtm_FOUND )
                   LIBS    ufo
                   LABELS  crtm filters
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../
-                  TEST_DEPENDS ufo_get_ufo_test_data ufo_get_crtm_test_data ) 
+                  TEST_DEPENDS ufo_get_ufo_test_data ufo_get_crtm_test_data )
 #
     ufo_add_test( NAME    tropics_qc_filters
                   ECBUILD
@@ -1145,14 +1239,14 @@ if( ${rttov_FOUND} )
                   LIBS    ufo
                   LABELS  rttov ${RTTOV_VERSION_LABEL} filters tier2
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
-# DAR: I cannot make this test work
+#
     ufo_add_test( NAME    iasi_rttov_ops_qc_rttovonedvarcheck
                   ECBUILD
                   COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
                   ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/iasi_rttov_ops_qc_rttovonedvarcheck${RTTOV_VERSION_SUFFIX}.yaml"
                   MPI     2
                   LIBS    ufo
-                  LABELS  rttov ${RTTOV_VERSION_LABEL} filters ci_oneapi_disable
+                  LABELS  rttov ${RTTOV_VERSION_LABEL} filters
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
     ufo_add_test( NAME    mtgirs_reconrad_obsop_check
@@ -1222,6 +1316,25 @@ ufo_add_test( NAME    preprocess
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/preprocess.yaml"
               MPI     1
               LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+
+# Multi-task preprocessing must write one file at the configured name (no MPI-rank
+# suffix), independent of the number of tasks.
+ufo_add_test( NAME    preprocess_mpi
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/ufo_preprocess.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/preprocess_mpi.yaml"
+              MPI     4
+              LIBS    ufo
+              LABELS  filters
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+
+ufo_add_test( NAME    preprocess_mpi_output
+              ECBUILD
+              COMMAND ${CMAKE_COMMAND}
+              ARGS    -E sha256sum Data/aircraft_obs_2018041500_m_out_preprocess_mpi.nc4
+              TEST_DEPENDS ufo_preprocess_mpi
               LABELS  filters
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 

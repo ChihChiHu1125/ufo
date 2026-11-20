@@ -6,14 +6,15 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include "ufo/variabletransforms/Cal_SurfaceWindScalingPressure.h"
+
 #include <algorithm>
 #include <cmath>
 #include <string>
 
+#include "ioda/ObsSpace.h"
 #include "oops/util/missingValues.h"
-
 #include "ufo/GeoVaLs.h"
-#include "ufo/variabletransforms/Cal_SurfaceWindScalingPressure.h"
 
 namespace ufo {
 
@@ -34,7 +35,7 @@ namespace ufo {
     oops::Log::trace() << "Cal_SurfaceWindScalingPressure::Constructor start" << std::endl;
     // List of GeoVaLs this transform will need access to
     gvals_ += Variable("GeoVaLs/air_pressure");
-    gvals_ += Variable("GeoVaLs/wind_reduction_factor_at_10m");
+    gvals_ += Variable("GeoVaLs/ratio_of_wind_at_surface_adjacent_layer_to_wind_at_10m");
     gvals_ += Variable("GeoVaLs/virtual_temperature");
     gvals_ += Variable("GeoVaLs/air_pressure_at_surface");
     oops::Log::trace() << "Cal_SurfaceWindScalingPressure::Constructor done" << std::endl;
@@ -82,8 +83,9 @@ namespace ufo {
 
     for (int iloc = 0; iloc < nlocs; ++iloc) {
       // Get the GeoVaLs at this location
-      gvals->getAtLocation(windReductionFactorAt10m, oops::Variable{"wind_reduction_factor_at_10m"},
-                                                                    iloc);
+      gvals->getAtLocation(windReductionFactorAt10m,
+                           oops::Variable{"ratio_of_wind_at_surface_adjacent_layer_to_wind_at_10m"},
+                           iloc);
       gvals->getAtLocation(surfacePressure, oops::Variable{"air_pressure_at_surface"}, iloc);
       gvals->getAtLocation(airPressure, oops::Variable{"air_pressure"}, iloc);
       gvals->getAtLocation(virtualTemperature, oops::Variable{"virtual_temperature"}, iloc);

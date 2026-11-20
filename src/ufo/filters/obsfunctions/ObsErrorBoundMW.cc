@@ -16,6 +16,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/obsfunctions/ObsErrorFactorLatRad.h"
@@ -165,7 +166,7 @@ void ObsErrorBoundMW::compute(const ObsFilterData & in,
       for (size_t iloc = 0; iloc < nlocs; ++iloc) {
         if (flaggrp == "PreQC") obserrdata[iloc] == missing ? qcflagdata[iloc] = 100
                                                             : qcflagdata[iloc] = 0;
-        (qcflagdata[iloc] == 0) ? (varinv = 1.0 / pow(obserrdata[iloc], 2)) : (varinv = 0.0);
+        (qcflagdata[iloc] == 0) ? (varinv = 1.0 / std::pow(obserrdata[iloc], 2)) : (varinv = 0.0);
         out[ichan][iloc] = (*obserr)[ichan][iloc];
         if (varinv > 0.0) {
           if (water_frac[iloc] > 0.99) {
@@ -227,7 +228,7 @@ void ObsErrorBoundMW::compute(const ObsFilterData & in,
       for (size_t iloc = 0; iloc < nlocs; ++iloc) {
         if (flaggrp == "PreQC") obserrdata[iloc] == missing ? qcflagdata[iloc] = 100
                                                             : qcflagdata[iloc] = 0;
-        (qcflagdata[iloc] == 0) ? (varinv = 1.0 / pow(obserrdata[iloc], 2)) : (varinv = 0.0);
+        (qcflagdata[iloc] == 0) ? (varinv = 1.0 / std::pow(obserrdata[iloc], 2)) : (varinv = 0.0);
         out[ichan][iloc] = obserr0[ichan];
         if (varinv > 0.0) {
             out[ichan][iloc] = std::fmin((thresholdfactor * obserr0[ichan]

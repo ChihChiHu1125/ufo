@@ -1,8 +1,8 @@
 /*
  * (C) Crown copyright 2020, Met Office
- * 
+ *
  * This software is licensed under the terms of the Apache Licence Version 2.0
- * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+ * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
 #ifndef UFO_PROFILE_PROFILECHECKRH_H_
@@ -29,14 +29,17 @@ namespace ufo {
    public:
     explicit ProfileCheckRH(const ConventionalProfileProcessingParameters &options);
 
-    /// Run check
-    void runCheck(ProfileDataHandler &profileDataHandler) override;
-
     /// This check requires HofX to have been calculated.
     bool requiresHofX() override {return true;}
 
     /// Fill variables in validator
     void fillValidationData(ProfileDataHandler &profileDataHandler) override;
+
+   protected:
+    void doPrepareOutputColumns(ProfileDataHandler &profileDataHandler) override;
+
+    /// Run check
+    void doRunCheck(ProfileDataHandler &profileDataHandler) override;
 
    private:
     /// Observed pressure for selected levels (hPa)
@@ -45,7 +48,7 @@ namespace ufo {
     /// Observed temperature for selected levels (K)
     std::vector <float> Temp_;
 
-    /// Observed relative humidity for selected levels (%)
+    /// Observed relative humidity for selected levels (% or fraction)
     std::vector <float> rh_;
 
     /// Observed dew point temperature for selected levels (K)

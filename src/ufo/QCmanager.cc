@@ -14,6 +14,7 @@
 
 #include "eckit/utils/StringTools.h"
 #include "ioda/distribution/Accumulator.h"
+#include "ioda/distribution/Distribution.h"
 #include "ioda/ObsDataVector.h"
 #include "ioda/ObsSpace.h"
 #include "ioda/ObsVector.h"
@@ -182,7 +183,10 @@ void QCmanager::print(std::ostream & os) const {
     {QCflags::history,       "removed by history check"},
     {QCflags::processed,     "rejected as processed but not assimilated"},
     {QCflags::superrefraction, "rejected by GNSSRO super refraction QC"},
-    {QCflags::superob,       "rejected by superobbing"}
+    {QCflags::superob,       "rejected by superobbing"},
+    {QCflags::step,          "rejected by step check"},
+    {QCflags::percentile,    "rejected by percentile filter"},
+    {QCflags::recordthreshold, "rejected by record threshold filter"}
   };
   const size_t numSpecialCases = 3;
 

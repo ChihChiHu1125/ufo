@@ -28,7 +28,8 @@ static ObsOperatorMaker<ObsBackgroundErrorVertInterp> maker("BackgroundErrorVert
 
 ObsBackgroundErrorVertInterp::ObsBackgroundErrorVertInterp(const ioda::ObsSpace & odb,
                                                            const Parameters_ & parameters)
-  : ObsOperatorBase(odb, VariableNameMap(parameters.AliasFile.value())),
+  : ObsOperatorBase(odb, VariableNameMap(parameters.AliasFile.value(),
+                                         parameters.variableMaps.value())),
     odb_(odb), parameters_(parameters)
 {
   oops::Log::trace() << "ObsBackgroundErrorVertInterp constructor start" << std::endl;
@@ -79,6 +80,7 @@ void ObsBackgroundErrorVertInterp::simulateObs(const GeoVaLs & geovals, ioda::Ob
                                                  verticalCoordinate.c_str(),
                                                  geovals.toFortran(), odb_, hofx.nlocs(),
                                                  variables,
+                                                 parameters_.toConfiguration(),
                                                  ydiags.toFortran());
 
   oops::Log::trace() << "ObsBackgroundErrorVertInterp::simulateObs done" <<  std::endl;

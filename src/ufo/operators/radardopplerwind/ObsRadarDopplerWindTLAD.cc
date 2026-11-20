@@ -26,7 +26,8 @@ static LinearObsOperatorMaker<ObsRadarDopplerWindTLAD> makerRadarDopplerWindTL_(
 
 ObsRadarDopplerWindTLAD::ObsRadarDopplerWindTLAD(const ioda::ObsSpace & odb,
                                                  const Parameters_ & params)
-  : LinearObsOperatorBase(odb, VariableNameMap(params.AliasFile.value())),
+  : LinearObsOperatorBase(odb, VariableNameMap(params.AliasFile.value(),
+                                               params.variableMaps.value())),
     odb_(odb), params_(params)
 {
   const std::vector<std::string> expectedVariables{"radialVelocity"};
@@ -140,6 +141,7 @@ void ObsRadarDopplerWindTLAD::simulateObsTL(const GeoVaLs & dx,
     const double dw = ufo::PiecewiseLinearInterpolation::interpolate(vec_z_w, inc_w, z_ob);
 
     // Combine u, v and w with beam geometry variable to produced final dH.
+    // (params_.terminalVelocity is a constant, so it drops out of the linearization)
     if (ufo::anyEqualTo(missingDouble, du, dv, dw)) {
       dy[jloc] = missingDouble;
     } else {

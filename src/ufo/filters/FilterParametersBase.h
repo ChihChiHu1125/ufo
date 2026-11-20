@@ -20,8 +20,35 @@
 #include "ufo/filters/Variable.h"
 #include "ufo/ObsFilterParametersBase.h"
 #include "ufo/utils/parameters/ParameterTraitsVariable.h"
+#include "ufo/utils/VariableNameMap.h"
 
 namespace ufo {
+
+/// \brief Parameters for the identifier block
+class IdentifierParameters : public oops::Parameters {
+  OOPS_CONCRETE_PARAMETERS(IdentifierParameters, Parameters)
+
+ public:
+  oops::RequiredParameter<std::string> name{"name",
+         "Unique identifier name for this filter instance in an observation space.", this};
+
+  /// Whether to log the flagged observation count using the unique identifier. Default: false.
+  oops::Parameter<bool> logging{"logging",
+         "Whether to log the flagged obs count using the unique identifier.", false, this};
+
+  /// Whether to write per-observation flagged results to DiagnosticFlags/<filterId>/<varname>
+  /// in the output ioda file. Default: false.
+  oops::Parameter<bool> diagnosticFlag{"diagnostic flag",
+         "Whether to write per-observation filter results as DiagnosticFlags into the ioda file",
+         false, this};
+
+  /// Whether to write per-observation flags for ONLY newly flagged observations (those
+  /// that currently have pass status) to DiagnosticFlags/<filterId>_new/<varname>.
+  /// Default: false.
+  oops::Parameter<bool> diagnosticFlagNew{"diagnostic flag new",
+         "Whether to write diagnostic flags for only newly flagged observations",
+         false, this};
+};
 
 /// \brief Parameters controlling the action performed on observations flagged by a filter.
 class FilterActionParameters : public oops::Parameters {
@@ -66,12 +93,20 @@ class FilterParametersBaseWithAbstractActions : public ObsFilterParametersBase {
   /// doesn't require any variables from the GeoVaLs or HofX groups).
   oops::Parameter<bool> deferToPost{"defer to post", false, this};
 
+  /// Optional identifier block for filter identification and logging.
+  oops::OptionalParameter<IdentifierParameters> identifier{"identifier", this};
+
   /// Return parameters specifying the actions to be performed on observations flagged by the
   /// filter.
   virtual std::vector<std::unique_ptr<FilterActionParametersBase>> actions() const = 0;
 
   /// \brief Parameter specifying path to yaml file containing Observation to GeoVaL name mapping
   oops::OptionalParameter<std::string> AliasFile{"observation alias file", this};
+
+  /// \brief Inline variable name mappings (alternative to observation alias file).
+  /// If both are specified, inline maps take precedence over file-based ones for overlapping names.
+  oops::OptionalParameter<std::vector<VariableNameParameters>> variableMaps{
+      "variable maps", this};
 
  protected:
   /// Parameters specifying a single action to be performed on observations flagged by the filter.

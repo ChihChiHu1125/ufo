@@ -10,7 +10,9 @@
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
+#include "ioda/ObsSpace.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 
 #include "ufo/filters/obsfunctions/StableLayersCloudTopPressure.h"
@@ -91,8 +93,8 @@ void StableLayersCloudTopPressure::compute(const ObsFilterData & in,
   // Constants.
   const float tempLimitWarm = options_.tempLimitWarm.value();
   const float tempLimitCold = options_.tempLimitCold.value();
-  const float stableDensity = options_.stableDensity.value();
-  const float relativeHumidityDensity = options_.relativeHumidityDensity.value();
+  const float stableDenominator = options_.stableDenominator.value();
+  const float relativeHumidityDenominator = options_.relativeHumidityDenominator.value();
   const double relativeHumidityOffset = options_.relativeHumidityOffset.value();
   const double relativeHumidityMinimum = options_.relativeHumidityMinimum.value();
 
@@ -258,8 +260,8 @@ void StableLayersCloudTopPressure::compute(const ObsFilterData & in,
 
       // Calculate the weightings that correspond to the lapse rate and relative humidity.
       const double lapse_weight = std::max(std::min((sat_lapse_rate - lapse_rate) /
-                                                    (stableDensity * mean_temp), 1.0), 0.0);
-      const double rh_weight = std::max(std::min((gv_rh[ilev] / relativeHumidityDensity) +
+                                                    (stableDenominator * mean_temp), 1.0), 0.0);
+      const double rh_weight = std::max(std::min((gv_rh[ilev] / relativeHumidityDenominator) +
                                   relativeHumidityOffset, 1.0), relativeHumidityMinimum);
 
       // Initialise the lapse weight for the layer below to 0.0 and calculate its value if we are
@@ -280,7 +282,7 @@ void StableLayersCloudTopPressure::compute(const ObsFilterData & in,
 
         // Calculate the lapse weight for the layer below.
         lapse_weight_below = std::max(std::min((sat_lapse_rate_below - lapse_rate_below) /
-                                        (stableDensity * mean_temp_below), 1.0), 0.0);
+                                        (stableDenominator * mean_temp_below), 1.0), 0.0);
       }
 
       if (!useBTConstraint) {
@@ -406,7 +408,11 @@ void StableLayersCloudTopPressure::compute(const ObsFilterData & in,
   // Output into ObsSpace.
   obsdb.put_db("MetaData", "overcastBriTempAtCloudTop", bt_cloud_top);
   obsdb.put_db("MetaData", "standardDeviationAtCloudTop", standard_deviation);
-  obsdb.put_db("DiagnosticFlags/NoStableLayers", "brightnessTemperature", nostablelayers_flag);
+  // nostablelayers_flag has dimension (nlocs*nchans), so the put_db must specify
+  // [Location, Channel] in the dimList parameter (4th parameter), rather than
+  // taking the Location-only default.
+  obsdb.put_db("DiagnosticFlags/NoStableLayers", "brightnessTemperature", nostablelayers_flag,
+               {"Location", "Channel"});
   oops::Log::trace() << "StableLayersCloudTopPressure compute complete" << std::endl;
 }
 
@@ -415,7 +421,7 @@ void StableLayersCloudTopPressure::compute(const ObsFilterData & in,
 // Function to calculate saturated adiabatic lapse rate.
 double StableLayersCloudTopPressure::computeSALR(const double p, const double t) const {
     // Use the Clausius-Clapeyron equation to calculate the saturation vapour pressure.
-    const double es = Constants::es_w_0 * exp((Constants::L_c / Constants::rv) *
+    const double es = Constants::es_w_0 * std::exp((Constants::L_c / Constants::rv) *
                                   ((1.0 / Constants::t0c) - (1.0 / t)));
 
     // Calculate the saturation mixing ratio.

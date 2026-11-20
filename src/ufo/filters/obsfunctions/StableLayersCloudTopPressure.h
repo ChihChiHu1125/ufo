@@ -87,19 +87,21 @@ class StableLayersCloudTopPressureParameters : public oops::Parameters {
      -1.0,
      this};
 
-  /// Stable density.
-  oops::Parameter<float> stableDensity
-    {"stable density",
-     "Parameter that controls the density of the lapse rate weights (default=1.0).",
+  /// Stable denominator.
+  oops::Parameter<float> stableDenominator
+    {"stable denominator",
+     "Parameter that controls the denominator of the lapse rate weights (default=1.0).",
      1.0,
      this};
 
-  /// Relative humidity density.
-  oops::Parameter<float> relativeHumidityDensity
-    {"relative humidity density",
-     "Parameter that controls the density of the relative humidity weights (default=1.0).",
-     1.0,
-     this};
+  /// Relative humidity denominator, in units of model relative humidity (i.e. as a
+  /// fraction rather than a percentage).
+  oops::Parameter<float> relativeHumidityDenominator{
+      "relative humidity denominator as a fraction",
+      "Parameter that controls the denominator of the relative humidity weights, "
+      "in units of model relative humidity (i.e. as a fraction rather than a "
+      "percentage) (default=1.0).",
+      1.0, this};
 
   /// Relative humidity offset.
   oops::Parameter<float> relativeHumidityOffset
@@ -129,8 +131,8 @@ class StableLayersCloudTopPressureParameters : public oops::Parameters {
 /// is within a certain range of the brightness temperature at the level. The parameters
 /// tempLimitWarm and tempLimitCold are used to set a tolerance for the second and third tests.
 /// Then, each layer that passes the tests is assigned a stability weight. The parameters
-/// stableDensity, relativeHumidityDensity, relativeHumidityOffset and relativeHumidityMinimum
-/// are used to control the calculation of the stability weight.
+/// stableDenominator, relativeHumidityDenominator, relativeHumidityOffset and
+/// relativeHumidityMinimum are used to control the calculation of the stability weight.
 /// Next, the cloud top pressure is calculated using a quadratic fit to the stability weights.
 /// The brightness temperature at the cloud top is then found by interpolating the model
 /// brightness temperature at the cloud top pressure.
@@ -157,4 +159,3 @@ class StableLayersCloudTopPressure : public ObsFunctionBase<float> {
 }  // namespace ufo
 
 #endif  // UFO_FILTERS_OBSFUNCTIONS_STABLELAYERSCLOUDTOPPRESSURE_H_
-

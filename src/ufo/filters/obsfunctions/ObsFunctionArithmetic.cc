@@ -7,34 +7,39 @@
 
 #include "ufo/filters/obsfunctions/ObsFunctionArithmetic.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 
 namespace ufo {
 
-// Note that this class is used for both the Arithmetic and the Linear Combination
-// obs functions hence both makers are specified here.
+// Note that this class is used for both the Arithmetic and the
+// LinearCombination obs functions hence both makers are specified here.
 static ObsFunctionMaker<Arithmetic<float>> ArithmeticfloatMaker("Arithmetic");
 static ObsFunctionMaker<Arithmetic<int>> ArithmeticintMaker("Arithmetic");
 
-static ObsFunctionMaker<Arithmetic<float>> LinearCombinationfloatMaker("LinearCombination");
-static ObsFunctionMaker<Arithmetic<int>> LinearCombinationintMaker("LinearCombination");
+static ObsFunctionMaker<Arithmetic<float>> LinearCombinationfloatMaker(
+    "LinearCombination");
+static ObsFunctionMaker<Arithmetic<int>> LinearCombinationintMaker(
+    "LinearCombination");
 
 // -----------------------------------------------------------------------------
 
 template <typename FunctionValue>
-Arithmetic<FunctionValue>::Arithmetic(const eckit::LocalConfiguration & conf)
-  : invars_() {
+Arithmetic<FunctionValue>::Arithmetic(const eckit::LocalConfiguration& conf)
+    : invars_() {
   oops::Log::trace() << "Arithmetic constructor" << std::endl;
   // Check options
   options_.validateAndDeserialize(conf);
 
   // Create variable and add to invars_
-  for (const Variable & var : options_.variables.value()) {
+  for (const Variable& var : options_.variables.value()) {
     invars_ += var;
   }
 }
@@ -42,8 +47,8 @@ Arithmetic<FunctionValue>::Arithmetic(const eckit::LocalConfiguration & conf)
 // -----------------------------------------------------------------------------
 
 template <typename FunctionValue>
-void Arithmetic<FunctionValue>::compute(const ObsFilterData & in,
-                                               ioda::ObsDataVector<FunctionValue> & out) const {
+void Arithmetic<FunctionValue>::compute(
+    const ObsFilterData& in, ioda::ObsDataVector<FunctionValue>& out) const {
   oops::Log::trace() << "Arithmetic compute start" << std::endl;
   // dimension
   const size_t nlocs = in.nlocs();
@@ -51,7 +56,7 @@ void Arithmetic<FunctionValue>::compute(const ObsFilterData & in,
   // number of input variables
   const size_t nv = invars_.size();
 
-  // get exponent coefficients
+  // get multiplicative coefficients
   std::vector<FunctionValue> coefs(nv, 1);
   if (options_.coefs.value() != boost::none)
     coefs = options_.coefs.value().get();
@@ -113,11 +118,11 @@ void Arithmetic<FunctionValue>::compute(const ObsFilterData & in,
   for (size_t ivar = 0; ivar < nv; ++ivar) {
     abs_exponents.push_back(std::abs(exponents[ivar]));
   }
-  if (*std::max_element(abs_exponents.begin(), abs_exponents.end()) > 10
-          || std::abs(total_exponent) > 25) {
-      oops::Log::warning() << "There is at least one large exponent (>25). "
-                              "This may result in overflow errors."
-                           << std::endl;
+  if (*std::max_element(abs_exponents.begin(), abs_exponents.end()) > 10 ||
+      std::abs(total_exponent) > 25) {
+    oops::Log::warning() << "There is at least one large exponent (>25). "
+                            "This may result in overflow errors."
+                         << std::endl;
   }
 
   // initialize
@@ -127,48 +132,86 @@ void Arithmetic<FunctionValue>::compute(const ObsFilterData & in,
   const FunctionValue missing = util::missingValue<FunctionValue>();
   const int missing_int = util::missingValue<int>();
   for (size_t ivar = 0; ivar < nv; ++ivar) {
-    ioda::ObsDataVector<FunctionValue> varin(in.obsspace(), invars_[ivar].toOopsObsVariables());
+    ioda::ObsDataVector<FunctionValue> varin(
+        in.obsspace(), invars_[ivar].toOopsObsVariables());
     in.get(invars_[ivar], varin);
     ASSERT(varin.nvars() == out.nvars());
     for (size_t iloc = 0; iloc < nlocs; ++iloc) {
       for (size_t ichan = 0; ichan < out.nvars(); ++ichan) {
         if (options_.useChannelNumber) {
-          varin[ichan][iloc] = (channels[ichan] == missing_int) ?
-                      missing : static_cast<float>(channels[ichan]);
+          varin[ichan][iloc] = (channels[ichan] == missing_int)
+                                   ? missing
+                                   : static_cast<float>(channels[ichan]);
         }
-        if ( varin[ichan][iloc] == missing || out[ichan][iloc] == missing ) {
-          out[ichan][iloc] = missing;
-        } else if (varin[ichan][iloc] < 0 && static_cast<int>(exponents[ivar]) != exponents[ivar]) {
-            out[ichan][iloc] = missing;
-            oops::Log::warning() << "coefficient exponent "
-                                    "Trying to raise a negative number to a non-integer exponent. "
-                                    "Output for " << invars_[ivar] << " at location " << iloc <<
-                                    " set to missing." << std::endl;
-        } else {
-          FunctionValue value = varin[ichan][iloc];
+        FunctionValue value = varin[ichan][iloc];
+        if (value != missing) {
           if (absolute_value[ivar]) {
             value = std::abs(value);
           }
           if (truncate[ivar] > 0) {
             value = std::trunc(value / truncate[ivar]) * truncate[ivar];
           }
-          out[ichan][iloc] += coefs[ivar] * logpower(
-            value,
-            exponents[ivar],
-            log_bases[ivar]);
+        }
+        if (value == missing || out[ichan][iloc] == missing) {
+          out[ichan][iloc] = missing;
+        } else if (!log_bases[ivar].empty() && value <= 0) {
+          std::stringstream msg;
+          msg << "Log of non-positive value error. "
+                 "Variable is "
+              << invars_[ivar] << " at location " << iloc << ".";
+          warnOrThrow<eckit::BadValue>(msg.str());
+          out[ichan][iloc] = missing;
+        } else if (value < 0 &&
+                   static_cast<int>(exponents[ivar]) != exponents[ivar]) {
+          std::stringstream msg;
+          msg << "Coefficient exponent error. "
+                 "Trying to raise a negative number to a non-integer exponent. "
+                 "Complex numbers are not currently supported. "
+                 "Variable is "
+              << invars_[ivar] << " at location " << iloc << ".";
+          warnOrThrow<eckit::NotImplemented>(msg.str());
+          out[ichan][iloc] = missing;
+        } else if (value == 0 && exponents[ivar] <= 0) {
+          std::stringstream msg;
+          msg << "Div/0 error! "
+                 "Variable is "
+              << invars_[ivar] << " at location " << iloc << ".";
+          warnOrThrow<eckit::BadValue>(msg.str());
+          out[ichan][iloc] = missing;
+        } else {
+          out[ichan][iloc] +=
+              coefs[ivar] * logpower(value, exponents[ivar], log_bases[ivar]);
           if (ivar == nv - 1) {
-            if (out[ichan][iloc] < 0 && static_cast<int>(total_exponent) != total_exponent
-                && out[ichan][iloc] != missing) {
-                out[ichan][iloc] = missing;
-                oops::Log::warning() << "total coefficient exponent "
-                                        "Trying to raise a negative number to a non-integer "
-                                        "exponent. Output for " << invars_[ivar] <<
-                                        " at location " << iloc << " set to missing." << std::endl;
+            if (out[ichan][iloc] <= 0 && !total_log_base.empty()) {
+              std::stringstream msg;
+              msg << "Log of non-positive value error. "
+                  << "Variable is " << invars_[ivar] << " at location "
+                  << iloc << ".";
+              warnOrThrow<eckit::BadValue>(msg.str());
+              out[ichan][iloc] = missing;
+            } else if (out[ichan][iloc] < 0 &&
+                       static_cast<int>(total_exponent) != total_exponent) {
+              std::stringstream msg;
+              msg << "Total coefficient exponent error. "
+                     "Trying to raise a negative number to a non-integer "
+                     "exponent. "
+                     "Complex numbers are not currently supported. "
+                     "Variable is "
+                  << invars_[ivar] << " at location " << iloc << ".";
+              warnOrThrow<eckit::NotImplemented>(msg.str());
+              out[ichan][iloc] = missing;
+            } else if (out[ichan][iloc] == 0 && total_exponent < 0) {
+              std::stringstream msg;
+              msg << "Div/0 error! "
+                     "Variable is "
+                  << invars_[ivar] << " at location " << iloc << ".";
+              warnOrThrow<eckit::BadValue>(msg.str());
+              out[ichan][iloc] = missing;
             } else {
-                out[ichan][iloc] = total_coeff*logpower(
-                  out[ichan][iloc],
-                  total_exponent,
-                  total_log_base) + intercept;
+              out[ichan][iloc] =
+                  total_coeff * logpower(out[ichan][iloc], total_exponent,
+                                         total_log_base) +
+                  intercept;
             }
           }
         }
@@ -181,7 +224,19 @@ void Arithmetic<FunctionValue>::compute(const ObsFilterData & in,
 // -----------------------------------------------------------------------------
 
 template <typename FunctionValue>
-const ufo::Variables & Arithmetic<FunctionValue>::requiredVariables() const {
+template <typename ExceptionType>
+void Arithmetic<FunctionValue>::warnOrThrow(const std::string& msg) const {
+  if (options_.abortIfInvalid) {
+    throw ExceptionType(msg, Here());
+  } else {
+    oops::Log::warning() << msg << " Output will be missing.\n";
+  }
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename FunctionValue>
+const ufo::Variables& Arithmetic<FunctionValue>::requiredVariables() const {
   return invars_;
 }
 
@@ -189,9 +244,8 @@ const ufo::Variables & Arithmetic<FunctionValue>::requiredVariables() const {
 
 template <typename FunctionValue>
 FunctionValue Arithmetic<FunctionValue>::logpower(
-    FunctionValue value,
-    FunctionValue exponent,
-    std::string log_base) const {
+    FunctionValue value, FunctionValue exponent,
+    const std::string& log_base) const {
   if (log_base.empty()) {
     return power(value, exponent);
   } else {
@@ -201,12 +255,9 @@ FunctionValue Arithmetic<FunctionValue>::logpower(
 }
 
 template <typename FunctionValue>
-FunctionValue Arithmetic<FunctionValue>::logbasen(FunctionValue value, std::string log_base) const {
-  if (value <= 0.0) {
-    std::stringstream msg;
-    msg << "Invalid log value '" << value << "' for log base '" + log_base + "'.";
-    throw eckit::BadValue(msg.str(), Here());
-  }
+FunctionValue Arithmetic<FunctionValue>::logbasen(
+    FunctionValue value, const std::string& log_base) const {
+  ASSERT(value > 0);
   if (log_base == "e") {
     return std::log(value);
   }
@@ -221,14 +272,15 @@ FunctionValue Arithmetic<FunctionValue>::logbasen(FunctionValue value, std::stri
     }
   }
   std::stringstream msg;
-  msg << "Invalid log base '" + log_base + "' for value '" << value << + "'.";
+  msg << "Invalid log base '" + log_base + "' for value '" << value << +"'.";
   throw eckit::BadValue(msg.str(), Here());
 }
 
 // -----------------------------------------------------------------------------
 
 template <typename FunctionValue>
-FunctionValue Arithmetic<FunctionValue>::power(FunctionValue value, FunctionValue exponent) const {
+FunctionValue Arithmetic<FunctionValue>::power(FunctionValue value,
+                                               FunctionValue exponent) const {
   if (exponent == FunctionValue(1.0)) {
     return value;
   } else {

@@ -16,6 +16,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -209,7 +210,7 @@ void HydrometeorCheckAMSUA::compute(const ObsFilterData & in,
     float tmp = innov[ich528][iloc] * w2f4;
     tmp = tmp * tmp;
     float factch4 = clwx * clwx + tmp;
-    float factch6 = pow(dsval, 2) + pow(innov[ich544][iloc] * w2f6, 2);
+    float factch6 = std::pow(dsval, 2) + std::pow(innov[ich544][iloc] * w2f6, 2);
 
     // Hydrometeor check over water surface
     if (water_frac[iloc] > 0.99) {

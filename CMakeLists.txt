@@ -7,7 +7,7 @@
 # UFO
 ################################################################################
 
-cmake_minimum_required( VERSION 3.12 )
+cmake_minimum_required( VERSION 3.23 )
 
 project( ufo VERSION 1.13.0 LANGUAGES C CXX Fortran )
 
@@ -153,7 +153,14 @@ message(STATUS "PPRO: Including built-in PPRO dual-polarization radar operator")
 # Set values for downloading crtm test data from tarball
 
 if( ${crtm_FOUND} )
-    if( crtm_VERSION VERSION_GREATER_EQUAL 3.0.0 )
+    if( crtm_VERSION VERSION_GREATER_EQUAL 3.1.6 AND crtm_VERSION VERSION_LESS 3.2.0 )
+        #https://bin.ssec.wisc.edu/pub/s4/CRTM/fix_REL-3.1.6.0.tgz
+        set (crtm_data_download_url "https://bin.ssec.wisc.edu/pub/s4/CRTM")
+        set (crtm_data_tag "fix_REL-3.1.6.0")
+        set (crtm_data_tag_postfix "fix/")
+        set (crtm_data_tarball_hash "fe65edff7621935c37976b406832d627")
+        set (crtm_data_tarball_name ${crtm_data_tag}.tgz)
+    elseif( crtm_VERSION VERSION_GREATER_EQUAL 3.0.0 )
         #https://bin.ssec.wisc.edu/pub/s4/CRTM/fix_REL-3.1.2.0.tgz
         set (crtm_data_download_url "https://bin.ssec.wisc.edu/pub/s4/CRTM")
         set (crtm_data_tag "fix_REL-3.1.2.0")  #this may cause problems with older CRTM
@@ -204,9 +211,9 @@ if( BUILD_TESTING )
   set (UFO_CRTM_TESTFILES_PATH ${UFO_CRTM_TESTFILES_PATH} PARENT_SCOPE)
   set (UFO_UFO_TESTFILES_PATH ${UFO_UFO_TESTFILES_PATH} PARENT_SCOPE)
 
-  execute_process( COMMAND ${CMAKE_COMMAND} -E copy
-     ${PROJECT_SOURCE_DIR}/tools/ufo_cpplint.py
-     ${CMAKE_BINARY_DIR}/bin/ufo_cpplint.py )
+  file( MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+  file( COPY_FILE ${PROJECT_SOURCE_DIR}/tools/ufo_cpplint.py
+        ${CMAKE_BINARY_DIR}/bin/ufo_cpplint.py ONLY_IF_DIFFERENT )
   ecbuild_add_test( TARGET ufo_coding_norms
                     TYPE SCRIPT
                     COMMAND ${CMAKE_BINARY_DIR}/bin/ufo_cpplint.py

@@ -39,6 +39,9 @@ namespace QCflags {
   constexpr int processed = 29;  // observation processed but deliberately H(x) not calculated
   constexpr int superrefraction = 30;  // observation rejected by GNSSRO super refraction QC
   constexpr int superob = 31;  // superob value not set at this location
+  constexpr int step   = 32;  // observation removed due to step check
+  constexpr int percentile = 33;  // observation removed due to percentile filter
+  constexpr int recordthreshold = 34;  // observation rejected by record threshold filter
   /// \brief Return true if the QC flag \p qcflag indicates that an observation has been rejected,
   /// false otherwise.
   inline bool isRejected(int qcflag) {

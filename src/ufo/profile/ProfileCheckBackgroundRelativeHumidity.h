@@ -1,8 +1,8 @@
 /*
  * (C) Crown copyright 2020, Met Office
- * 
+ *
  * This software is licensed under the terms of the Apache Licence Version 2.0
- * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0. 
+ * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
 #ifndef UFO_PROFILE_PROFILECHECKBACKGROUNDRELATIVEHUMIDITY_H_
@@ -38,9 +38,6 @@ namespace ufo {
     explicit ProfileCheckBackgroundRelativeHumidity
       (const ConventionalProfileProcessingParameters &options);
 
-    /// Run check
-    void runCheck(ProfileDataHandler &profileDataHandler) override;
-
     /// This check requires HofX to have been calculated.
     bool requiresHofX() override {return true;}
 
@@ -54,6 +51,12 @@ namespace ufo {
       else
         return oops::Variables();
     }
+
+   protected:
+    void doPrepareOutputColumns(ProfileDataHandler &profileDataHandler) override;
+
+    /// Run check
+    void doRunCheck(ProfileDataHandler &profileDataHandler) override;
   };
 }  // namespace ufo
 

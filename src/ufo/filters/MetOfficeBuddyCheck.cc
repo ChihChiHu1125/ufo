@@ -19,6 +19,7 @@
 
 #include <boost/format.hpp>
 
+#include "ioda/distribution/Distribution.h"
 #include "ioda/ObsDataVector.h"
 #include "ioda/ObsSpace.h"
 #include "oops/base/Variables.h"
@@ -286,7 +287,8 @@ MetOfficeBuddyCheck::MetOfficeBuddyCheck(ioda::ObsSpace& obsdb, const Parameters
                                          ioda::ObsDataVector<int>& flags,
                                          ioda::ObsDataVector<float>& obserr)
   : FilterBase(obsdb, parameters, flags, obserr,
-                VariableNameMap(parameters.AliasFile.value())), options_(parameters)
+               VariableNameMap(parameters.AliasFile.value(), parameters.variableMaps.value())),
+    options_(parameters)
 {
   oops::Log::trace() << "MetOfficeBuddyCheck constructor" << std::endl;
   oops::Log::debug() << "MetOfficeBuddyCheck: config = " << options_ << std::endl;

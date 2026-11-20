@@ -119,7 +119,7 @@ observations:
         channels: *all_channels
         options:
           channels: *all_channels
-          sensor: *Sensor_ID
+          sensor: infrared
 #   passedBenchmark: 26014
 #  Transmittance Top Check
   - filter: BlackList

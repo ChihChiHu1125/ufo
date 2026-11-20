@@ -15,6 +15,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -110,7 +111,7 @@ void ObsErrorBoundIR::compute(const ObsFilterData & in,
     for (size_t iloc = 0; iloc < nlocs; ++iloc) {
       if (flaggrp == "PreQC") obserrdata[iloc] == missing ? qcflagdata[iloc] = 100
                                                            : qcflagdata[iloc] = 0;
-      (qcflagdata[iloc] == 0) ? (varinv = 1.0 / pow(obserrdata[iloc], 2)) : (varinv = 0.0);
+      (qcflagdata[iloc] == 0) ? (varinv = 1.0 / std::pow(obserrdata[iloc], 2)) : (varinv = 0.0);
       out[ichan][iloc] = obserr[ichan];
       if (varinv > 0.0) {
         out[ichan][iloc] = std::fmin(3.0 * obserr[ichan]

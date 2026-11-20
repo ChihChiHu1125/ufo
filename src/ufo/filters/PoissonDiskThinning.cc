@@ -15,15 +15,17 @@
 #include <vector>
 
 #include "eckit/container/KDTree.h"
+#include "eckit/geometry/KPoint.h"
+#include "ioda/distribution/Distribution.h"
 #include "ioda/ObsDataVector.h"
 #include "ioda/ObsSpace.h"
 #include "oops/base/Variables.h"
+#include "oops/util/abor1_cpp.h"
 #include "oops/util/DateTime.h"
 #include "oops/util/Duration.h"
 #include "oops/util/IsAnyPointInVolumeInterior.h"
 #include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
-#include "ufo/filters/getScalarOrFilterData.h"
 #include "ufo/filters/ObsAccessor.h"
 #include "ufo/filters/PoissonDiskThinningParameters.h"
 #include "ufo/utils/Constants.h"

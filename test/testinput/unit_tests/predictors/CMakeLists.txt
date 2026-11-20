@@ -24,6 +24,14 @@ if( crtm_FOUND )
                   LABELS  crtm unit_tests predictors
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+    ufo_add_test( NAME    gmi_crtm_bc_geos
+                  ECBUILD
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsOperator.x
+                  ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gmi_crtm_bc_geos.yaml"
+                  LIBS    ufo
+                  LABELS  crtm unit_tests predictors
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
     ufo_add_test( NAME    amsua_crtm_bc_obsoperator
                   ECBUILD
                   COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsOperator.x
@@ -68,9 +76,8 @@ ufo_add_test( NAME    bias_covariance_amsua
 #
 ufo_add_test( NAME    bias_covariance_aircraft
               ECBUILD
-              SOURCES ../../../mains/TestObsBiasCovariance.cc
+              COMMAND ufo_bias_covariance_amsua
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coeff_cov_byrecord.yaml"
-              LIBS    ufo
               LABELS  unit_tests predictors
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
@@ -84,19 +91,17 @@ ufo_add_test( NAME    bias_covariance_details
 #
 ufo_add_test( NAME    bias_covariance_details_byrecord
               ECBUILD
-              SOURCES ../../../mains/TestObsBiasCovarianceDetails.cc
+              COMMAND ufo_bias_covariance_details
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coeff_cov_byrecord.yaml"
-              LIBS    ufo
               LABELS  unit_tests predictors
               TEST_DEPENDS ufo_bias_covariance_aircraft
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
 ufo_add_test( NAME    bias_covariance_details_byrecord_2
               ECBUILD
-              SOURCES ../../../mains/TestObsBiasCovarianceDetails.cc
+              COMMAND ufo_bias_covariance_details
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coeff_cov_byrecord.yaml"
               MPI     2
-              LIBS    ufo
               LABELS  unit_tests predictors
               TEST_DEPENDS ufo_bias_covariance_details_byrecord
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
@@ -111,10 +116,9 @@ ufo_add_test( NAME    bias_coeff_readwrite
 #
 ufo_add_test( NAME    bias_coeff_readwrite_byrecord
               ECBUILD
-              SOURCES ../../../mains/TestUfoObsBias.cc
+              COMMAND ufo_bias_coeff_readwrite
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coeff_cov_byrecord.yaml"
               MPI     2
-              LIBS    ufo
               LABELS  unit_tests predictors
               TEST_DEPENDS ufo_bias_covariance_details_byrecord_2
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
@@ -162,6 +166,27 @@ ufo_add_test( NAME    aircraft_bc_mpi
               LABELS  unit_tests predictors
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+# VarBC cold start: the UFO equivalent of WRFDA's da_varbc_coldstart. Run on 1 and 2 MPI tasks to
+# confirm that the histogram reduction gives the same coefficients regardless of decomposition.
+if( crtm_FOUND )
+    ufo_add_test( NAME    bias_coldstart
+                  ECBUILD
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsOperator.x
+                  ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coldstart.yaml"
+                  LIBS    ufo
+                  LABELS  crtm unit_tests predictors
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+
+    ufo_add_test( NAME    bias_coldstart_mpi
+                  ECBUILD
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsOperator.x
+                  ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/bias_coldstart.yaml"
+                  MPI     2
+                  LIBS    ufo
+                  LABELS  crtm unit_tests predictors
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+endif( crtm_FOUND )
+#
 ufo_add_test( NAME    bias_single_channel
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsOperator.x
@@ -186,6 +211,22 @@ ufo_add_test( NAME    cosine_of_latitude_predictor
               LABELS  unit_tests predictors
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
 #
+ufo_add_test( NAME    emissivity_jacobian_predictor
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_Predictor.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/emissivity_jacobian_predictor.yaml"
+              LIBS    ufo
+              LABELS  unit_tests predictors
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    lapse_rate_predictor
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_Predictor.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/lapse_rate_predictor.yaml"
+              LIBS    ufo
+              LABELS  unit_tests predictors
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
 ufo_add_test( NAME    legendre_predictor
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_Predictor.x
@@ -206,6 +247,14 @@ ufo_add_test( NAME    orbital_angle_predictor
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_Predictor.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/orbital_angle_predictor.yaml"
+              LIBS    ufo
+              LABELS  unit_tests predictors
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )
+#
+ufo_add_test( NAME    scan_angle_predictor
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_Predictor.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/scan_angle_predictor.yaml"
               LIBS    ufo
               LABELS  unit_tests predictors
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../ )

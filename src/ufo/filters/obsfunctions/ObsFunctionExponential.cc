@@ -12,7 +12,10 @@
 #include <vector>
 
 #include "ioda/distribution/Accumulator.h"
+#include "ioda/distribution/Distribution.h"
 #include "ioda/ObsDataVector.h"
+#include "ioda/ObsSpace.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 
@@ -81,7 +84,7 @@ void Exponential::compute(const ObsFilterData & in,
             out[ichan][iloc] = coeffD;
             count_exparg_toobig_accumulator->addTerm(iloc+ichan*nchans, 1);
           } else {
-            out[ichan][iloc] = coeffA * exp(coeffB * varin[ichan][iloc]) + coeffC;
+            out[ichan][iloc] = coeffA * std::exp(coeffB * varin[ichan][iloc]) + coeffC;
           }
         }
       }  // ichan

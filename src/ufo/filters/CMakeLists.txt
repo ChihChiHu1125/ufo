@@ -32,6 +32,8 @@ set ( filters_files
       FilterParametersBase.h
       FilterUtils.cc
       FilterUtils.h
+      FindNearestNeighbors.cc
+      FindNearestNeighbors.h
       GenericFilterParameters.h
       GeoVaLsWriter.cc
       GeoVaLsWriter.h
@@ -93,6 +95,9 @@ set ( filters_files
       QCflags.h
       PerformAction.cc
       PerformAction.h
+      UseNearestNeighbors.cc
+      UseNearestNeighbors.h
+      UseNearestNeighborsParameters.h
       ProfileAverageObsToModLevels.cc
       ProfileAverageObsToModLevels.h
       AverageObsToGeoValLevels.cc
@@ -105,17 +110,30 @@ set ( filters_files
       ProfileMaxDifferenceCheck.h
       ProfileUnFlagObsCheck.cc
       ProfileUnFlagObsCheck.h
+      RecordThresholdRejection.cc
+      RecordThresholdRejection.h
       SatName.h
       SatName.cc
       SatwindInversionCorrection.cc
       SatwindInversionCorrection.h
+      SharedListCheck.cc
+      SharedListCheck.h
+      SharedListStore.cc
+      SharedListStore.h
       SpikeAndStepCheck.cc
       SpikeAndStepCheck.h
+      StepCheck.cc
+      StepCheck.h
+      StepCheckParameters.h
       StuckCheck.cc
       StuckCheck.h
       StuckCheckParameters.h
+      Percentile.cc
+      Percentile.h
+      PercentileParameters.h
       SuperOb.h
       SuperOb.cc
+      SuperObParameters.h
       SuperRefractionCheckImpactParameter.h
       SuperRefractionCheckImpactParameter.cc
       SuperRefractionCheckNBAM.h
@@ -181,6 +199,8 @@ set ( filters_files
       actions/PassivateObs.h
       actions/ReduceObsSpace.cc
       actions/ReduceObsSpace.h
+      actions/RecordActionUtils.cc
+      actions/RecordActionUtils.h
       actions/RejectObs.cc
       actions/RejectObs.h
       actions/ROobserrInflation.cc
@@ -259,6 +279,8 @@ set ( filters_files
       obsfunctions/CloudFirstGuessMinimumResidual.h
       obsfunctions/CircularDifference.cc
       obsfunctions/CircularDifference.h
+      obsfunctions/LocationToObsSpace.cc
+      obsfunctions/LocationToObsSpace.h
       obsfunctions/MetOfficeAllSkyErrorModel.cc
       obsfunctions/MetOfficeAllSkyErrorModel.h
       obsfunctions/ModelHeightAdjustedWindVectorComponent.cc
@@ -267,6 +289,8 @@ set ( filters_files
       obsfunctions/ModelHeightAdjustedAirTemperature.h
       obsfunctions/ModelHeightAdjustedRelativeHumidity.cc
       obsfunctions/ModelHeightAdjustedRelativeHumidity.h
+      obsfunctions/ModelHeightAdjustedSpecificHumidity.cc
+      obsfunctions/ModelHeightAdjustedSpecificHumidity.h
       obsfunctions/ModelHeightAdjustedMarineWind.cc
       obsfunctions/ModelHeightAdjustedMarineWind.h
       obsfunctions/MPIRank.cc
@@ -279,6 +303,8 @@ set ( filters_files
       obsfunctions/ObsErrorBoundMW.h
       obsfunctions/ObsErrorSatSpecHumidity.cc
       obsfunctions/ObsErrorSatSpecHumidity.h
+      obsfunctions/ObsErrorFactorDensity.cc
+      obsfunctions/ObsErrorFactorDensity.h
       obsfunctions/ObsErrorFactorDuplicateCheck.cc
       obsfunctions/ObsErrorFactorDuplicateCheck.h
       obsfunctions/ObsErrorFactorPressureCheck.cc
@@ -372,6 +398,8 @@ set ( filters_files
       obsfunctions/ProfileAverageObsPressure.h
       obsfunctions/ProfileLevelCount.cc
       obsfunctions/ProfileLevelCount.h
+      obsfunctions/PropagateOneValuePerRecord.cc
+      obsfunctions/PropagateOneValuePerRecord.h
       obsfunctions/ProfileVerticalSmoothing.cc
       obsfunctions/ProfileVerticalSmoothing.h
       obsfunctions/DateTimeOffset.cc
@@ -388,6 +416,8 @@ set ( filters_files
       obsfunctions/RecordNumberToObsSpace.h
       obsfunctions/ModelLevelIndex.cc
       obsfunctions/ModelLevelIndex.h
+      obsfunctions/ModelLevelsBelowSurface.cc
+      obsfunctions/ModelLevelsBelowSurface.h
 )
 
 if( ${gsw_FOUND} )

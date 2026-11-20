@@ -5,6 +5,9 @@
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
 
+#include <string>
+#include <vector>
+
 #include "ufo/profile/ProfileCheckRH.h"
 #include "ufo/profile/ProfileVariableNames.h"
 
@@ -17,11 +20,59 @@ namespace ufo {
     : ProfileCheckBase(options)
   {}
 
-  void ProfileCheckRH::runCheck(ProfileDataHandler &profileDataHandler)
+  void ProfileCheckRH::doPrepareOutputColumns(ProfileDataHandler &profileDataHandler)
   {
     oops::Log::debug() << " Relative humidity check" << std::endl;
 
+    const std::vector<std::string> variableNamesBool =
+      {ufo::ProfileVariableNames::diagflags_tropo_t,
+       ufo::ProfileVariableNames::diagflags_final_reject_t,
+       ufo::ProfileVariableNames::diagflags_interpolation_rh,
+       ufo::ProfileVariableNames::diagflags_final_reject_rh};
+    const std::vector<std::string> variableNamesFloat =
+      {ufo::ProfileVariableNames::obscorrection_air_temperature};
+    const std::vector<std::string> variableNamesInt =
+      {ufo::ProfileVariableNames::counter_TotCProfs,
+       ufo::ProfileVariableNames::counter_TotHProfs,
+       ufo::ProfileVariableNames::counter_TotCFlags,
+       ufo::ProfileVariableNames::counter_TotHFlags,
+       ufo::ProfileVariableNames::counter_TotLFlags};
+
+    for (const auto &variableBool : variableNamesBool) {
+      profileDataHandler.get<bool>(variableBool);
+    }
+    for (const auto &variableFloat : variableNamesFloat) {
+      profileDataHandler.get<float>(variableFloat);
+    }
+    for (const auto &variableInt : variableNamesInt) {
+      profileDataHandler.get<int>(variableInt);
+    }
+  }
+
+  void ProfileCheckRH::doRunCheck(ProfileDataHandler &profileDataHandler)
+  {
+    const std::vector <bool> &diagFlagsTTropopause =
+       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_tropo_t);
+    profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_final_reject_t);
+    std::vector <bool> &diagFlagsRHInterp =
+       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_interpolation_rh);
+    std::vector <bool> &diagFlagsRHFinalReject =
+       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_final_reject_rh);
+    const std::vector <float> &tObsCorrection =
+       profileDataHandler.get<float>(ufo::ProfileVariableNames::obscorrection_air_temperature);
+    std::vector <int> &TotCProfs =
+       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotCProfs);
+    std::vector <int> &TotHProfs =
+       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotHProfs);
+    std::vector <int> &TotCFlags =
+       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotCFlags);
+    std::vector <int> &TotHFlags =
+       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotHFlags);
+    std::vector <int> &TotLFlags =
+       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotLFlags);
+
     const int numProfileLevels = profileDataHandler.getNumProfileLevels();
+
     const std::vector <float> &pressures =
        profileDataHandler.get<float>(ufo::ProfileVariableNames::obs_air_pressure);
     const std::vector <float> &tObs =
@@ -34,26 +85,6 @@ namespace ufo {
        profileDataHandler.get<float>(ufo::ProfileVariableNames::hofx_relative_humidity);
     const std::vector <float> &tdObs =
        profileDataHandler.get<float>(ufo::ProfileVariableNames::obs_dew_point_temperature);
-    const std::vector <bool> &diagFlagsTTropopause =
-       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_tropo_t);
-       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_final_reject_t);
-    std::vector <bool> &diagFlagsRHInterp =
-       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_interpolation_rh);
-    std::vector <bool> &diagFlagsRHFinalReject =
-       profileDataHandler.get<bool>(ufo::ProfileVariableNames::diagflags_final_reject_rh);
-    const std::vector <float> &tObsCorrection =
-       profileDataHandler.get<float>(ufo::ProfileVariableNames::obscorrection_air_temperature);
-
-    std::vector <int> &TotCProfs =
-       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotCProfs);
-    std::vector <int> &TotHProfs =
-       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotHProfs);
-    std::vector <int> &TotCFlags =
-       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotCFlags);
-    std::vector <int> &TotHFlags =
-       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotHFlags);
-    std::vector <int> &TotLFlags =
-       profileDataHandler.get<int>(ufo::ProfileVariableNames::counter_TotLFlags);
 
     if (!oops::allVectorsSameNonZeroSize(pressures, tObs, tBkg, RHObs, RHBkg,
                                          tdObs,
@@ -118,7 +149,10 @@ namespace ufo {
 
     // Look for errors at the top of cloud layers
 
-    const float RHThresh = options_.RHCheck_RHThresh.value();
+    const float RHThresh = options_.RHCheck_RHThresh.value().value_or(
+        0.75f * relativeHumidityAtSaturation());
+    const float MinRHThresh = options_.RHCheck_MinRHThresh.value().value_or(
+        0.75f * relativeHumidityAtSaturation());
     const float PressDiffAdjThresh = options_.RHCheck_PressDiffAdjThresh.value();
     for (int jlev = 1; jlev < NumLev; ++jlev) {
       if (Press_[jlev] < options_.RHCheck_PressThresh.value()) break;
@@ -133,7 +167,7 @@ namespace ufo {
           if (Press_[jlev] - Press_[klev] > PressDiffAdjThresh) break;
           MinRHabove = std::min(MinRHabove, rh_[klev]);
         }
-        if (MinRHabove < options_.RHCheck_MinRHThresh.value()) {
+        if (MinRHabove < MinRHThresh) {
           FlagH_[jlev] = 2;
           TotCProfs[0]++;
           oops::Log::debug() << " -> Error at top of cloud layer for level " << jlev << std::endl;
@@ -151,7 +185,8 @@ namespace ufo {
     // Simple check for sonde ascent too moist at high levels
     // Start at top and work down
 
-    const float SondeRHHiTol = options_.RHCheck_SondeRHHiTol.value();
+    const float SondeRHHiTol =
+        options_.RHCheck_SondeRHHiTol.value().value_or(0.0f);
 
     int NumLFlags = 0;
     int NumHFlags = 0;

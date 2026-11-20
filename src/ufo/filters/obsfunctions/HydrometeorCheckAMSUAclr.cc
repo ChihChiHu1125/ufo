@@ -16,6 +16,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -200,7 +201,7 @@ void HydrometeorCheckAMSUAclr::compute(const ObsFilterData & in,
       float clwx = 0.6;
       float dsval = 0.8;
       if (water_frac[iloc] >= 0.99) {
-        float cossza = cos(Constants::deg2rad * satzen[iloc]);
+        float cossza = std::cos(Constants::deg2rad * satzen[iloc]);
         clwx = w1f4 * clw_pred[iloc] / cossza;
         float btobsbc238 = btobs[ich238][iloc] - bias_const238[iloc]
                                                - bias_scanang238[iloc];
@@ -208,8 +209,8 @@ void HydrometeorCheckAMSUAclr::compute(const ObsFilterData & in,
                 0.454 * innov[ich314][iloc] - innov[ich890][iloc]) * w1f6;
         dsval = std::max(static_cast<float>(0.0), dsval);
       }
-      float factch4 = pow(clwx, 2) + pow(innov[ich528][iloc] * w2f4, 2);
-      float factch6 = pow(dsval, 2) + pow(innov[ich544][iloc] * w2f6, 2);
+      float factch4 = std::pow(clwx, 2) + std::pow(innov[ich528][iloc] * w2f4, 2);
+      float factch6 = std::pow(dsval, 2) + std::pow(innov[ich544][iloc] * w2f6, 2);
 
       // Hydrometeor check
       // Precipitation check (factch6)

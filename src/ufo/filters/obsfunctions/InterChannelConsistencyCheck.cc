@@ -16,6 +16,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -87,7 +88,7 @@ void InterChannelConsistencyCheck::compute(const ObsFilterData & in,
     for (size_t iloc = 0; iloc < nlocs; ++iloc) {
       if (flaggrp == "PreQC") obserrdata[iloc] == missing ? qcflagdata[iloc] = 100
                                                            : qcflagdata[iloc] = 0;
-      (qcflagdata[iloc] == 0) ? (varinv[ichan][iloc] = 1.0 / pow(obserrdata[iloc], 2))
+      (qcflagdata[iloc] == 0) ? (varinv[ichan][iloc] = 1.0 / std::pow(obserrdata[iloc], 2))
                               : (varinv[ichan][iloc] = 0.0);
     }
   }

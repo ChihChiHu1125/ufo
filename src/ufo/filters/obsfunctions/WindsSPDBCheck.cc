@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
@@ -136,7 +137,7 @@ void WindsSPDBCheck::compute(const ObsFilterData & in,
       errmin = error_min[ii0];
       udiff = u[jj]-um[jj];
       vdiff = v[jj]-vm[jj];
-      residual = sqrt(udiff*udiff + vdiff*vdiff);
+      residual = std::sqrt(udiff*udiff + vdiff*vdiff);
       if (itype[jj] == 244 || itype[jj] == 245 || itype[jj] == 246 ||
           itype[jj] == 253 || itype[jj] == 254 || itype[jj] == 257 ||
           itype[jj] == 258 || itype[jj] == 259) {
@@ -149,7 +150,7 @@ void WindsSPDBCheck::compute(const ObsFilterData & in,
           uf = um[jj];
           vf = vm[jj];
           presw = 0.01 * obs_pressure[jj];
-          spdb = sqrt(u[jj]*u[jj]+v[jj]*v[jj]) - sqrt(uf*uf+vf*vf);
+          spdb = std::sqrt(u[jj]*u[jj]+v[jj]*v[jj]) - std::sqrt(uf*uf+vf*vf);
           if (spdb < 0.0f) {
             if (itype[jj] == 244) {
               qcgross = 0.7*qcgross;

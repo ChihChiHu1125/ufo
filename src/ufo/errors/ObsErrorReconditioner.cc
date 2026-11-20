@@ -4,9 +4,13 @@
  * This software is licensed under the terms of the Apache Licence Version 2.0
  * which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
  */
+#include <Eigen/Dense>
+
 #include <vector>
 
 #include "ufo/errors/ObsErrorReconditioner.h"
+
+#include "oops/util/Logger.h"
 
 namespace ufo {
 
@@ -79,7 +83,7 @@ void ObsErrorReconditioner::recondition(Eigen::MatrixXd & R) const {
       oops::Log::debug() << "eval_min = " << eval_min
                          << " , performing a ridge regression to ensure positive definiteness\n";
       double alpha = 1.0 + 1e-15;
-      alpha = (eval_min == 0.0) ? alpha - 1.0 : alpha * abs(eval_min);
+      alpha = (eval_min == 0.0) ? alpha - 1.0 : alpha * std::abs(eval_min);
       for (size_t jvar = 0; jvar < nrows; ++jvar) {
           evals[jvar] += alpha;
       }

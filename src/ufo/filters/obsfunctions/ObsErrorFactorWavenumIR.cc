@@ -17,7 +17,9 @@
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
+#include "ioda/ObsSpace.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/filters/Variable.h"
 #include "ufo/utils/Constants.h"
@@ -105,9 +107,9 @@ void ObsErrorFactorWavenumIR::compute(const ObsFilterData & in,
              nlevs - 1, tao_sfc);
       for (size_t iloc = 0; iloc < nlocs; ++iloc) {
         if (water_frac[iloc] > 0.f && solza[iloc] <= 89.f) {
-          float factor = std::fmax(0.f, cos(Constants::deg2rad * solza[iloc]));
+          float factor = std::fmax(0.f, std::cos(Constants::deg2rad * solza[iloc]));
           factor = tao_sfc[iloc] * factor *(1.f / 400.f);
-          out[ich][iloc] = sqrt(1.f / (1.f - (wavenumber[ich] - 200000.f)/100.f * factor));
+          out[ich][iloc] = std::sqrt(1.f / (1.f - (wavenumber[ich] - 200000.f)/100.f * factor));
         }
       }
     }

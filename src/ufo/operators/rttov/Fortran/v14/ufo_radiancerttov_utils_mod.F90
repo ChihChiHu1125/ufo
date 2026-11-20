@@ -20,7 +20,7 @@ module ufo_radiancerttov_utils_mod
   use logger_mod, only: oops_log
   use missing_values_mod, only : missing_value
   use obsspace_mod, only : obsspace_get_nlocs, obsspace_has, obsspace_get_db, obsspace_put_db, &
-    obsspace_get_window
+    obsspace_get_window, obsspace_get_comm
 
   use rttov_types, only : rttov_options, rttov_profile, rttov_coefs, &
     rttov_radiance, rttov_transmission, rttov_emis_refl, rttov_chanprof
@@ -139,6 +139,7 @@ module ufo_radiancerttov_utils_mod
 
     real(kind_real), allocatable     :: ciw(:,:)                ! pointer to either ice from MW scattering or diagnosed ice from Qsplit
     real(kind_real), allocatable     :: tc_ozone(:)             ! total column ozone
+    logical                          :: tc_ozone_to_obsspace = .false. ! tc_ozone awaits writing by save_tc_ozone
 
     logical, allocatable             :: q_profile_reset(:,:)    ! flag to say if the humidity has been reset to a minimum value
     logical, allocatable             :: clw_profile_reset(:,:)  ! flag to say if cloud liquid water has been reset to a minimum value
@@ -164,6 +165,7 @@ module ufo_radiancerttov_utils_mod
     procedure :: print_rtprof            => ufo_rttov_print_rtprof
     procedure :: scale_ozone             => ufo_rttov_scale_ozone
     procedure :: calculate_tc_ozone      => ufo_rttov_calculate_tc_ozone
+    procedure :: save_tc_ozone           => ufo_rttov_save_tc_ozone
     procedure :: rad_to_bt               => ufo_rttov_Rad_to_BT
     procedure :: dBT_dRad                => ufo_rttov_dBT_dRad
 
@@ -945,6 +947,7 @@ contains
     missing = missing_value(missing)
 
     profiles => self % profiles
+    self % tc_ozone_to_obsspace = .false.
 
     if(present(ob_info)) then
       self % nlocs_total = 1
@@ -1169,9 +1172,8 @@ contains
             call self % calculate_tc_ozone(obss)
           end if
 
-          if(.not. present(ob_info)) then
-            call obsspace_put_db(obss, "MetaData", "ozoneTotal", self % tc_ozone)
-          end if
+          ! Written to MetaData/ozoneTotal by save_tc_ozone, which must be called on all tasks
+          if(.not. present(ob_info)) self % tc_ozone_to_obsspace = .true.
         end if
       case (var_co2)
         if (associated(profiles(1)%co2)) then
@@ -1186,10 +1188,12 @@ contains
           do iprof = 1, nProfiles
             profiles(iprof) % hydro(conf % rttov_hydro_index_clw, top_level:bottom_level:stride) = geoval%vals(:, iprof)
           end do
-        else
-          do iprof = 1, nProfiles
-            profiles(iprof) % clw(top_level:bottom_level:stride) = geoval%vals(:, iprof)
-          end do
+        else if (conf % rttov_opts % clw_absorption % clw_data) then
+          if (associated(profiles(1)%clw)) then
+            do iprof = 1, nProfiles
+              profiles(iprof) % clw(top_level:bottom_level:stride) = geoval%vals(:, iprof)
+            end do
+          end if
         end if
       case (var_cli)
         call ufo_geovals_get_var(geovals, conf%Absorbers(jspec), geoval)
@@ -1267,9 +1271,11 @@ contains
 
       call ufo_geovals_get_var(geovals, var_sfc_wdir, geoval)
 
+      ! wdir is the azimuth the wind blows toward, clockwise from north
+      ! (the convention produced by uv_to_wdir and consumed by CRTM)
       do iprof = 1, nprofiles
-        profiles(iprof)%near_surface(1) % wind_u10m = windsp(iprof) * cos(geoval%vals(1, iprof) * deg2rad)
-        profiles(iprof)%near_surface(1) % wind_v10m = windsp(iprof) * sin(geoval%vals(1, iprof) * deg2rad)
+        profiles(iprof)%near_surface(1) % wind_u10m = windsp(iprof) * sin(geoval%vals(1, iprof) * deg2rad)
+        profiles(iprof)%near_surface(1) % wind_v10m = windsp(iprof) * cos(geoval%vals(1, iprof) * deg2rad)
       end do
       deallocate(windsp)
     end if
@@ -1438,12 +1444,14 @@ contains
             end do
           else if (conf % rttov_opts % clw_absorption % clw_data) then
             ! Constrain small values to min_clw for clw profile
-            do ilev = 1, nlevels
-              if (profiles(iprof) % clw(ilev) < min_clw) then
-                profiles(iprof) % clw(ilev) = min_clw
-                self % clw_profile_reset(iprof, ilev) = .true.
-              end if
-            end do
+            if (associated(profiles(1)%clw)) then
+              do ilev = 1, nlevels
+                if (profiles(iprof) % clw(ilev) < min_clw) then
+                  profiles(iprof) % clw(ilev) = min_clw
+                  self % clw_profile_reset(iprof, ilev) = .true.
+                end if
+              end do
+            end if
           end if
         end if
 
@@ -1485,8 +1493,10 @@ contains
                         profiles(iprof) % hydro(conf % rttov_hydro_index_clw, :) + &
                         profiles(iprof) % hydro(conf % rttov_hydro_index_ciw, :)
 
-        else
-          Qtotal(:) = Qtotal(:) + profiles(iprof) % clw(:)
+        else if (conf % rttov_opts % clw_absorption % clw_data) then
+          if (associated(profiles(iprof) % clw)) then
+            Qtotal(:) = Qtotal(:) + profiles(iprof) % clw(:)
+          end if
         end if
 
         ! generate first guess cloud and q based on the qtotal physics
@@ -1506,7 +1516,9 @@ contains
           profiles(iprof) % hydro(conf % rttov_hydro_index_clw, :) = clw_temp(:)
           profiles(iprof) % hydro(conf % rttov_hydro_index_ciw, :) = ciw_temp(:)
         else if (conf % rttov_opts % clw_absorption % clw_data) then
-          profiles(iprof) % clw(:) = clw_temp(:)
+          if (associated(profiles(iprof) % clw)) then
+            profiles(iprof) % clw(:) = clw_temp(:)
+          end if
         end if
 
         self % ciw(:,iprof) = ciw_temp(:)
@@ -1538,7 +1550,7 @@ contains
       nprofiles = 1
       nlevels = size(profiles(1) % p)
 
-      profiles(1) % zenangle    = ob_info % sensor_zenith_angle
+      profiles(1) % zenangle    = abs(ob_info % sensor_zenith_angle)
       profiles(1) % azangle     = ob_info % sensor_azimuth_angle
       profiles(1) % sunzenangle = ob_info % solar_zenith_angle
       profiles(1) % sunazangle  = ob_info % solar_azimuth_angle
@@ -1587,6 +1599,12 @@ contains
       variable_present = obsspace_has(obss, "MetaData", "sensorZenithAngle")
       if (variable_present) then
         call obsspace_get_db(obss, "MetaData", "sensorZenithAngle", profiles(1:nprofiles)%zenangle)
+        ! Some data streams (e.g. GSI/ncdiag-derived files) sign the zenith
+        ! angle by scan side; RTTOV requires a magnitude and rejects negative
+        ! values in rttov_check_profiles. The scan-side information belongs to
+        ! sensorViewAngle/azimuth, so taking the absolute value here is lossless
+        ! (and a no-op for data that is already non-negative).
+        profiles(1:nprofiles)%zenangle = abs(profiles(1:nprofiles)%zenangle)
       else
         message = "ERROR: Mandatory input MetaData/sensorZenithAngle not in database. Aborting..."
         call abor1_ftn(message)
@@ -2276,7 +2294,10 @@ contains
         case (var_opt_depth, var_lvl_transmit, var_lvl_weightfunc, var_cli, var_tb_overcast)
 
           hofxdiags%geovals(jvar)%nval = nlevels
-          if(.not. allocated(hofxdiags%geovals(jvar)%vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags%geovals(jvar)%vals) .or. &
+              size(hofxdiags%geovals(jvar)%vals, 1) /= hofxdiags%geovals(jvar)%nval) then
+            if (allocated(hofxdiags%geovals(jvar)%vals)) deallocate(hofxdiags%geovals(jvar)%vals)
             allocate(hofxdiags%geovals(jvar)%vals(hofxdiags%geovals(jvar)%nval,nprofiles))
             hofxdiags%geovals(jvar)%vals = missing
           end if
@@ -2333,7 +2354,10 @@ contains
         case (var_radiance, var_tb_clr, var_tb, var_sfc_emiss, var_pmaxlev_weightfunc, var_total_transmit)
           ! always returned
           hofxdiags%geovals(jvar)%nval = 1
-          if(.not. allocated(hofxdiags%geovals(jvar)%vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags%geovals(jvar)%vals) .or. &
+              size(hofxdiags%geovals(jvar)%vals, 1) /= hofxdiags%geovals(jvar)%nval) then
+            if (allocated(hofxdiags%geovals(jvar)%vals)) deallocate(hofxdiags%geovals(jvar)%vals)
             allocate(hofxdiags%geovals(jvar)%vals(hofxdiags%geovals(jvar)%nval,nprofiles))
             hofxdiags%geovals(jvar)%vals = missing
           end if
@@ -2367,7 +2391,10 @@ contains
 
         case ("ozoneTotal")
           hofxdiags % geovals(jvar) % nval = 1
-          if(.not. allocated(hofxdiags % geovals(jvar) % vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags % geovals(jvar) % vals) .or. &
+              size(hofxdiags % geovals(jvar) % vals, 1) /= hofxdiags % geovals(jvar) % nval) then
+            if (allocated(hofxdiags % geovals(jvar) % vals)) deallocate(hofxdiags % geovals(jvar) % vals)
             allocate(hofxdiags % geovals(jvar) % vals(hofxdiags % geovals(jvar) % nval, nprofiles))
             hofxdiags % geovals(jvar) % vals = missing
           end if
@@ -2376,7 +2403,10 @@ contains
         case default
           ! not a supported obsdiag but we allocate and initialise here anyway for use later on
           hofxdiags%geovals(jvar)%nval = 1
-          if(.not. allocated(hofxdiags%geovals(jvar)%vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags%geovals(jvar)%vals) .or. &
+              size(hofxdiags%geovals(jvar)%vals, 1) /= hofxdiags%geovals(jvar)%nval) then
+            if (allocated(hofxdiags%geovals(jvar)%vals)) deallocate(hofxdiags%geovals(jvar)%vals)
             allocate(hofxdiags%geovals(jvar)%vals(hofxdiags%geovals(jvar)%nval,nprofiles))
             hofxdiags%geovals(jvar)%vals = missing
           end if
@@ -2396,7 +2426,10 @@ contains
         case (var_ts,var_mixr,var_q,var_clw,var_cli)
 
           hofxdiags%geovals(jvar)%nval = nlevels
-          if(.not. allocated(hofxdiags%geovals(jvar)%vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags%geovals(jvar)%vals) .or. &
+              size(hofxdiags%geovals(jvar)%vals, 1) /= hofxdiags%geovals(jvar)%nval) then
+            if (allocated(hofxdiags%geovals(jvar)%vals)) deallocate(hofxdiags%geovals(jvar)%vals)
             allocate(hofxdiags%geovals(jvar)%vals(hofxdiags%geovals(jvar)%nval,nprofiles))
             hofxdiags%geovals(jvar)%vals = missing
           end if
@@ -2421,9 +2454,11 @@ contains
                 if (conf % do_mw_scatt) then
                   hofxdiags%geovals(jvar)%vals(:,prof) = &
                     RTProf % profiles_k(ichan) % hydro(conf % rttov_hydro_index_clw, :)
-                else
-                  hofxdiags%geovals(jvar)%vals(:,prof) = &
-                    RTProf % profiles_k(ichan) % clw(:)
+                else if (conf % rttov_opts % clw_absorption % clw_data) then
+                  if (associated(RTProf % profiles_k(ichan) % clw)) then
+                    hofxdiags%geovals(jvar)%vals(:,prof) = &
+                      RTProf % profiles_k(ichan) % clw(:)
+                  end if
                 end if
               else if(self % xstr_diags(jvar) == var_cli) then
                 if (conf % do_mw_scatt) then
@@ -2443,7 +2478,10 @@ contains
         case (var_sfc_t2m, var_sfc_tskin, var_sfc_emiss, var_sfc_q2m, var_ps, var_sfc_u10, var_sfc_v10, &
               "cloud_top_pressure", "cloud_fraction")
           hofxdiags%geovals(jvar)%nval = 1
-          if(.not. allocated(hofxdiags%geovals(jvar)%vals)) then
+          ! hofxdiags may have been set up with zero levels (see ObsDiagnostics)
+          if (.not. allocated(hofxdiags%geovals(jvar)%vals) .or. &
+              size(hofxdiags%geovals(jvar)%vals, 1) /= hofxdiags%geovals(jvar)%nval) then
+            if (allocated(hofxdiags%geovals(jvar)%vals)) deallocate(hofxdiags%geovals(jvar)%vals)
             allocate(hofxdiags%geovals(jvar)%vals(hofxdiags%geovals(jvar)%nval,nprofiles))
             hofxdiags%geovals(jvar)%vals = missing
           end if
@@ -2552,8 +2590,7 @@ contains
            if (self % ch_diags(jvar) < 0) then
              self % ystr_diags(jvar) = varstr
            else
-             self % ystr_diags(jvar)(1:str_pos(3)-1) = varstr(1:str_pos(3)-1)
-             self % ystr_diags(jvar)(str_pos(3):) = ""
+             self % ystr_diags(jvar)(:) = varstr(1:str_pos(3)-1)
            end if
          end if
        end do
@@ -2709,6 +2746,42 @@ contains
     end do
 
   end subroutine ufo_rttov_calculate_tc_ozone
+
+  ! ------------------------------------------------------------------------------
+  !> Write the total column ozone flagged by setup_rtprof to MetaData/ozoneTotal.
+  !!
+  !! \details This is a collective call that must be made on every task of the ObsSpace
+  !! communicator, including tasks with no locations (which skip setup_rtprof). If any task
+  !! has total column ozone to write, every task writes the variable (tasks without profiles
+  !! write zero-length data) so that the ObsSpace columns are identical across tasks.
+  subroutine ufo_rttov_save_tc_ozone(self, obss)
+    use fckit_mpi_module, only: fckit_mpi_comm, fckit_mpi_max
+
+    implicit none
+
+    class(ufo_rttov_io), intent(inout) :: self
+    type(c_ptr), value,  intent(in)    :: obss
+
+    type(fckit_mpi_comm)               :: f_comm
+    integer                            :: write_flag
+    real(kind_real), allocatable       :: empty(:)
+
+    write_flag = merge(1, 0, self % tc_ozone_to_obsspace)
+    call obsspace_get_comm(obss, f_comm)
+    call f_comm % allreduce(write_flag, fckit_mpi_max())
+
+    if (write_flag == 1) then
+      if (self % tc_ozone_to_obsspace) then
+        call obsspace_put_db(obss, "MetaData", "ozoneTotal", self % tc_ozone)
+      else
+        allocate(empty(0))
+        call obsspace_put_db(obss, "MetaData", "ozoneTotal", empty)
+      end if
+    end if
+
+    self % tc_ozone_to_obsspace = .false.
+
+  end subroutine ufo_rttov_save_tc_ozone
 
   subroutine get_from_obsspace(name, obss, outarray)
     implicit none

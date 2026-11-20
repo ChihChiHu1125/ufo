@@ -17,6 +17,17 @@ if( crtm_FOUND )
                   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
 endif( crtm_FOUND )
 #
+if( crtm_FOUND )
+    ufo_add_test( NAME    amsr2_clw_ret_missing
+                  ECBUILD
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+                  ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/amsr2_clw_ret_missing.yaml"
+                  MPI     1
+                  LIBS    ufo
+                  LABELS  crtm filters obsfunctions tier2
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+endif( crtm_FOUND )
+#
 ufo_add_test( NAME    function_osw_windspeed
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
@@ -494,6 +505,15 @@ ufo_add_test( NAME    function_modellevelindex
               LABELS  filters obsfunctions
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
 #
+ufo_add_test( NAME    function_modellevelsbelowsurface
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_modellevelsbelowsurface.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
 ufo_add_test( NAME    function_metoffice_rh_corr
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
@@ -516,6 +536,15 @@ ufo_add_test( NAME    function_ModelSurfaceHeightAdjustRelativeHumidity
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFunction.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_ModelSurfaceHeightAdjustRelativeHumidity.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
+ufo_add_test( NAME    function_ModelSurfaceHeightAdjustSpecificHumidity
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFunction.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_ModelSurfaceHeightAdjustSpecificHumidity.yaml"
               MPI     1
               LIBS    ufo
               LABELS  filters obsfunctions
@@ -602,6 +631,24 @@ ufo_add_test( NAME    function_obserrorfactorconv
               LABELS  filters obsfunctions
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
 #
+ufo_add_test( NAME    function_obserrorfactordensity
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_obserrorfactordensity.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
+ufo_add_test( NAME    function_obserrorfactordensity_2pe
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_obserrorfactordensity.yaml"
+              MPI     2
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
 ufo_add_test( NAME    function_obserrorfactorpressurecheck
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFunction.x
@@ -683,11 +730,38 @@ ufo_add_test( NAME    function_profilelevelcount
               LABELS  filters obsfunctions
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
 #
+ufo_add_test( NAME    function_propagateonevalueperrecord
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_propagateonevalueperrecord.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
 ufo_add_test( NAME    function_radarscanedgeflag
               ECBUILD
               COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
               ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_radarscanedgeflag.yaml"
               MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
+ufo_add_test( NAME    function_writelocationobsspace_1PE
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_writelocationobsspace.yaml"
+              MPI     1
+              LIBS    ufo
+              LABELS  filters obsfunctions
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+#
+ufo_add_test( NAME    function_writelocationobsspace_3PE
+              ECBUILD
+              COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+              ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/function_writelocationobsspace.yaml"
+              MPI     3
               LIBS    ufo
               LABELS  filters obsfunctions
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
@@ -1050,6 +1124,17 @@ if( crtm_FOUND )
                   ECBUILD
                   COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
                   ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gmi_clw_ret.yaml"
+                  MPI     1
+                  LIBS    ufo
+                  LABELS  crtm filters obsfunctions
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../../../../ )
+endif( crtm_FOUND )
+#
+if( crtm_FOUND )
+    ufo_add_test( NAME    gmi_clw_ret_missing
+                  ECBUILD
+                  COMMAND ${CMAKE_BINARY_DIR}/bin/test_ObsFilters.x
+                  ARGS    "${CMAKE_CURRENT_SOURCE_DIR}/gmi_clw_ret_missing.yaml"
                   MPI     1
                   LIBS    ufo
                   LABELS  crtm filters obsfunctions

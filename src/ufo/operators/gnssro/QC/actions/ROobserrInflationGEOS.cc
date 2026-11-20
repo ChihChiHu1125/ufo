@@ -10,7 +10,9 @@
 #include <set>
 
 #include "ioda/ObsDataVector.h"
+#include "ioda/ObsSpace.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/ObsFilterData.h"
 #include "ufo/utils/StringUtils.h"
@@ -80,7 +82,7 @@ void ROobserrInflationGEOS::apply(const Variables & vars,
             }
          }
          factor[jobs] = inflate_factor;
-         factor[jobs] = sqrt(factor[jobs]);
+         factor[jobs] = std::sqrt(factor[jobs]);
       }
       if (obserr[0][jobs] != missing) obserr[0][jobs] *= factor[jobs];
   }

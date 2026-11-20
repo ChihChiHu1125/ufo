@@ -12,6 +12,7 @@ add_subdirectory( obslocalization )
 add_subdirectory( predictors )
 add_subdirectory( profile )
 add_subdirectory( superob )
+add_subdirectory( usenearestneighbors )
 add_subdirectory( utils )
 add_subdirectory( variabletransforms )
 
@@ -38,7 +39,6 @@ if(oasim_FOUND)
 endif()
 add_subdirectory( operators/product )
 add_subdirectory( operators/radardopplerwind )
-add_subdirectory( operators/radarradialvelocity )
 add_subdirectory( operators/radarshared)
 add_subdirectory( operators/radarpolarimetric)
 add_subdirectory( operators/radarreflectivity)
@@ -144,7 +144,6 @@ list( APPEND ufo_src_files
     ${aerosols_src_files}
     ${sfccorrected_src_files}
     ${radardopplerwind_src_files}
-    ${radarradialvelocity_src_files}
     ${radarshared_src_files}
     ${radarreflectivity_src_files}
     ${profile_src_files}
@@ -162,6 +161,7 @@ list( APPEND ufo_src_files
     ${timeoper_src_files}
     ${lightning_src_files}
     ${superob_src_files}
+    ${usenearestneighbors_src_files}
     ${windspeed_src_files}
     ${densityreduction_src_files}
     ${pathsum_src_files}
@@ -233,4 +233,3 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/${MODULE_DIR}/ DESTINATION ${CMAKE_INSTALL
 target_include_directories(${PROJECT_NAME} INTERFACE
                             $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/${MODULE_DIR}>
                             $<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/${MODULE_DIR}>)
-

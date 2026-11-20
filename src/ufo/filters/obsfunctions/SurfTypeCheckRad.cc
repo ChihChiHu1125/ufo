@@ -19,6 +19,7 @@
 
 #include "ioda/ObsDataVector.h"
 #include "oops/util/IntSetParser.h"
+#include "oops/util/Logger.h"
 #include "oops/util/missingValues.h"
 #include "ufo/filters/Variable.h"
 #include "ufo/utils/Constants.h"
@@ -113,11 +114,11 @@ void SurfTypeCheckRad::compute(const ObsFilterData & in,
     for (size_t iloc = 0; iloc < nlocs; ++iloc) out[ichan][iloc] = 0.0;
 
     if (use_flag[ichan] >= 1 && use_flag_clddet[ichan] >= 2) {
-       ASSERT((use_flag_clddet[ichan] - pow(2, ndim)) < 0);
+       ASSERT((use_flag_clddet[ichan] - std::pow(2, ndim)) < 0);
 
        dec = use_flag_clddet[ichan];
        for (size_t i = ndim; i >= 1; --i) {
-          bindec = pow(2, i-1);
+          bindec = std::pow(2, i-1);
           if (dec >= bindec) {
             bin[i-1] = 1;
             dec = dec - bindec;
@@ -139,7 +140,7 @@ void SurfTypeCheckRad::compute(const ObsFilterData & in,
          mixed = (!sea && !land && !ice && !snow);
          if (flaggrp == "PreQC")
                   obserrdata[iloc] == missing ? qcflagdata[iloc] = 100 : qcflagdata[iloc] = 0;
-         (qcflagdata[iloc] == 0) ? (varinv = 1.0 / pow(obserrdata[iloc], 2)) : (varinv = 0.0);
+         (qcflagdata[iloc] == 0) ? (varinv = 1.0 / std::pow(obserrdata[iloc], 2)) : (varinv = 0.0);
          if (varinv > 0.0) {
            if (sea && iwater_det > 0)  out[ichan][iloc] = 1.0;
            else if (land && iland_det > 0)  out[ichan][iloc] = 1.0;

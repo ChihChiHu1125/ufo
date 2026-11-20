@@ -59,6 +59,20 @@ observations:
 
   obs filters:
 
+  # Obs file is out-dated, and has varName instead of
+  # varNamesAt2M. Alias to correct names here for use
+  # in obsfunctions below
+  - filter: Variable Assignment
+    assignments:
+    - name: DerivedObsValue/airTemperatureAt2M
+      type: float
+      source variable:
+        name: ObsValue/airTemperature
+    - name: DerivedObsValue/specificHumidityAt2M
+      type: float
+      source variable:
+        name: ObsValue/specificHumidity
+
   # Apply variable changes needed for rescaled height coordinate
   # ------------------------------------------------------------
   - filter: Variable Transforms
@@ -319,4 +333,4 @@ observations:
     action:
       name: reject
 
-  passedBenchmark: 8
+  passedBenchmark: 7

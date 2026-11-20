@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numeric>
 #include <vector>
 
 #include "ioda/ObsDataVector.h"
@@ -95,7 +96,7 @@ void ObsRefractivityGradientCheck::applyFilter(
           if ((gradient[isort] <= parameters_.gradientMin.value() ||
               gradient[isort] >= parameters_.gradientMax.value() ||
               gradient[isort] == 0 ||
-              abs(secondDeriv[isort]) >= parameters_.secondDerivative.value()) &&
+              std::abs(secondDeriv[isort]) >= parameters_.secondDerivative.value()) &&
               (gradient[isort] != missingFloat  && secondDeriv[isort]!= missingFloat) &&
               height[obs_numbers[isort]] < parameters_.maxCheckHeight.value()) {
             // reject all observations below isort

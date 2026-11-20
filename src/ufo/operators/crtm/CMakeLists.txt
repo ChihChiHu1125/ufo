@@ -6,6 +6,7 @@
 set ( crtm_files
   crtmParameters/ObsRadianceCRTMParameters.h
   crtmParameters/ObsAodCRTMParameters.h
+  crtmParameters/ObsExtCoeffProfCRTMParameters.h
   ObsRadianceCRTM.h
   ObsRadianceCRTM.cc
   ObsRadianceCRTMTLAD.h
@@ -19,7 +20,6 @@ set ( crtm_files
   ufo_radiancecrtm_mod.F90
   ufo_radiancecrtm_tlad_mod.F90
   ufo_crtm_utils_mod.F90
-  ufo_ghg_utils_mod.F90
   ObsAodCRTM.h
   ObsAodCRTM.cc
   ObsAodCRTMTLAD.h
@@ -31,6 +31,11 @@ set ( crtm_files
   ufo_aodcrtm_mod.F90
   ufo_aodcrtm_tlad_mod.F90
   ufo_reconradop_crtm_mod.F90
+  ObsExtCoeffProfCRTM.h
+  ObsExtCoeffProfCRTM.cc
+  ObsExtCoeffProfCRTM.interface.F90
+  ObsExtCoeffProfCRTM.interface.h
+  ufo_extcoeffprofcrtm_mod.F90
 )
 
 PREPEND( _p_crtm_files       "operators/crtm"       ${crtm_files} )
